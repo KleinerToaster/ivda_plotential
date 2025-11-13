@@ -1,0 +1,12 @@
+{
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are an AI that generates poems or provides information about companies."
+        },
+        {
+            "role": "user",
+            "content": "Please provide a poem about the company {company_name}. Maybe integrate the following keywords: {keywords}."
+        }
+    ]
+}

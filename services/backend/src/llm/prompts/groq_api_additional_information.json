@@ -1,0 +1,12 @@
+{
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are an AI that list necessary qualifications that are needed to apply at this company."
+        },
+        {
+            "role": "user",
+            "content": "Please provide a list of qualifications needed to apply for the company {company_name}. Here may be additional information about a specifict person: {qualifications}"
+        }
+    ]
+}

@@ -1,45 +1,78 @@
 import { useState } from "react";
 import { Box, CardContent, Card, Typography, TextField, Button, Collapse, IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 
 interface AIPromptComponentProps {
   title: string;
   content: string;
   inputLabel?: string;
   onSubmitPrompt?: (promptText: string) => void;
+  open: boolean;
+  onClose?: () => void;
 }
 
 export const AIPromptComponent = ({
   title,
   content,
   inputLabel = "Add more context (keywords, preferences, etc.)",
-  onSubmitPrompt
+  onSubmitPrompt,
+  open,
+  onClose,
 }: AIPromptComponentProps) => {
   const [expanded, setExpanded] = useState(false);
   const [promptText, setPromptText] = useState("");
-  return <Box sx={{ mt: 3, px: 2 }}>
-    <Card
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <Box
       sx={{
-        borderRadius: "8px",
-        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-        background: "#fafafa",
-        maxWidth: "100%",
+        position: "fixed",
+        inset: 0,
+        zIndex: 1300,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "rgba(0,0,0,0.4)",
+        px: 2,
       }}
     >
-      <CardContent>
-        <Typography
-          variant="h6"
-          sx={{
-            fontFamily: '"Open Sans", verdana, arial, sans-serif',
-            fontSize: "18px",
-            fontWeight: 600,
-            color: "#333",
-            borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
-            pb: 1,
-            mb: 2,
-          }}
-        >
-          {title}
-        </Typography>
+      <Card
+        sx={{
+          borderRadius: "8px",
+          boxShadow: "0 4px 6px rgba(0,0,0,0.2)",
+          background: "#fafafa",
+          maxWidth: 700,
+          width: "100%",
+          maxHeight: "80vh",
+          overflowY: "auto",
+        }}
+      >
+        <CardContent>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontFamily: '"Open Sans", verdana, arial, sans-serif',
+                fontSize: "18px",
+                fontWeight: 600,
+                color: "#333",
+              }}
+            >
+              {title}
+            </Typography>
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => onClose && onClose()}
+              aria-label="Close AI prompt overlay"
+              title="Close AI prompt overlay"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
         
         {/* Collapsible prompt input area */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -106,7 +139,8 @@ export const AIPromptComponent = ({
         >
           {content}
         </Typography>
-      </CardContent>
-    </Card>
-  </Box>;
+        </CardContent>
+      </Card>
+    </Box>
+  );
 };

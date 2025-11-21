@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_restx import Resource, Api
 from flask_pymongo import PyMongo
 from pymongo.collection import Collection
-from .model import Company
+from .model import CompanyISIN, CompanySector, CompanyIndustryGroup
 from flask import request
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -14,63 +14,103 @@ cors.init_app(app, resources={r"*": {"origins": "*"}})
 app.config["MONGO_URI"] = "mongodb://localhost:27017/companiesdatabase"
 pymongo = PyMongo(app)
 # Get a reference to the companies collection.
-companies: Collection = pymongo.db.companies
+companies_isin: Collection = pymongo.db.companyISIN
+companies_sector: Collection = pymongo.db.companySector
+companies_industry_group: Collection = pymongo.db.companyIndustryGroups
 api = Api(app)
-class CompaniesList(Resource):
-    def get(self, args=None):
-        # retrieve the arguments and convert to a dict
-        args = request.args.to_dict()
-        print(args)
-        # Check if category parameter exists
-        if 'category' not in args:
-            # If no category specified, return all companies
-            cursor = companies.find()
-        # If the user specified category is "All" we retrieve all companies
-        elif args['category'] == 'All':
-            cursor = companies.find()
-        # In any other case, we only return the companies where the category applies
-        else:
-            cursor = companies.find(args)
-        # we return all companies as json
-        return [Company(**doc).to_json() for doc in cursor]
-class Companies(Resource):
-    def get(self, id):
-        import pandas as pd
-        from statsmodels.tsa.ar_model import AutoReg
-        # search for the company by ID
-        cursor = companies.find_one_or_404({"id": id})
-        company = Company(**cursor)
-        # retrieve args
-        args = request.args.to_dict()
-        # retrieve the profit
-        profit = company.profit
-        
-        # Check if algorithm parameter exists
-        if 'algorithm' in args:
-            # add to df
-            profit_df = pd.DataFrame(profit).iloc[::-1]
-            
-            if args['algorithm'] == 'random':
-                # retrieve the profit value from 2021
-                prediction_value = int(profit_df["value"].iloc[-1])
-                # add the value to profit list at position 0
-                company.profit.insert(0, {'year': 2022, 'value': prediction_value})
-            elif args['algorithm'] == 'regression':
-                # create model
-                model_ag = AutoReg(endog=profit_df['value'], lags=1, trend='c', seasonal=False, exog=None, hold_back=None,
-                                period=None, missing='none')
-                # train the model
-                fit_ag = model_ag.fit()
-                # predict for 2022 based on the profit data
-                prediction_value = fit_ag.predict(start=len(profit_df), end=len(profit_df), dynamic=False).values[0]
-                # add the value to profit list at position 0
-                company.profit.insert(0, {'year': 2022, 'value': prediction_value})
-            
-        
+
+def _company_isin_from_doc(doc) -> CompanyISIN:
+    return CompanyISIN(
+        description=doc.get("Description"),
+        id=doc.get("ID"),
+        isin=doc.get("ISIN"),
+        name=doc.get("Name"),
+        country=str(doc.get("country") or ""),
+        mkt_cap=int(doc.get("mktCap (EUR)") or 0),
+        stocks_owned=doc.get("stocksOwned") or 0,
+    )
+
+def _company_sector_from_doc(doc) -> CompanySector:
+    return CompanySector(
+        communication_services=doc.get("Communication Services"),
+        communication_services_u=doc.get("Communication Services[u]"),
+        consumer_discretionary=doc.get("Consumer Discretionary"),
+        consumer_discretionary_u=doc.get("Consumer Discretionary[u]"),
+        consumer_staples=doc.get("Consumer Staples"),
+        consumer_staples_u=doc.get("Consumer Staples[u]"),
+        description=doc.get("Description"),
+        energy=doc.get("Energy"),
+        energy_u=doc.get("Energy[u]"),
+        financials=doc.get("Financials"),
+        financials_u=doc.get("Financials[u]"),
+        gics_level=doc.get("GICS Level"),
+        gics_sector=doc.get("GICS Sector"),
+        health_care=doc.get("Health Care"),
+        health_care_u=doc.get("Health Care[u]"),
+        id=doc.get("ID"),
+        isin=doc.get("ISIN"),
+        industrials=doc.get("Industrials"),
+        industrials_u=doc.get("Industrials[u]"),
+        information_technology=doc.get("Information Technology"),
+        information_technology_u=doc.get("Information Technology[u]"),
+        materials=doc.get("Materials"),
+        materials_u=doc.get("Materials[u]"),
+        name=doc.get("Name"),
+        parse_date=doc.get("Parse Date"),
+        real_estate=doc.get("Real Estate"),
+        real_estate_u=doc.get("Real Estate[u]"),
+        utilities=doc.get("Utilities"),
+        utilities_u=doc.get("Utilities[u]"),
+        confidence=doc.get("confidence"),
+    )
+
+class CompaniesISINList(Resource):
+    def get(self):
+        cursor = companies_isin.find()
+        return [_company_isin_from_doc(doc).to_json() for doc in cursor]
+
+class CompanyISINDetail(Resource):
+    def get(self, isin):
+        cursor = companies_isin.find_one_or_404({"ISIN": isin})
+        company_isin_obj = _company_isin_from_doc(cursor)
+        return company_isin_obj.to_json()
+
+
+class CompaniesISIN(Resource):
+    def get(self, isin):
+        cursor = companies_isin.find_one_or_404({"ISIN": isin})
+        company = _company_isin_from_doc(cursor)
         return company.to_json()
-        
-api.add_resource(CompaniesList, '/companies')
-api.add_resource(Companies, '/companies/<int:id>')
+
+class CompaniesSectorList(Resource):
+    def get(self):
+        cursor = companies_sector.find()
+        return [_company_sector_from_doc(doc).to_json() for doc in cursor]
+
+class CompaniesSectorDetail(Resource):
+    def get(self, isin):
+        cursor = companies_sector.find_one_or_404({"ISIN": isin})
+        company = _company_sector_from_doc(cursor)
+        return company.to_json()
+
+class CompanyIndustryGroupList(Resource):
+    def get(self):
+        cursor = companies_industry_group.find()
+        # Return raw docs but make them JSON-serializable by stringifying ObjectId
+        docs = []
+        for doc in cursor:
+            doc = dict(doc)
+            if "_id" in doc:
+                doc["_id"] = str(doc["_id"])
+            docs.append(doc)
+        return docs
+
+api.add_resource(CompaniesISIN, '/companies_isin/<string:isin>')
+api.add_resource(CompaniesSectorDetail, '/companies_sector/<string:isin>')
+api.add_resource(CompanyISINDetail, '/company_isin/<string:isin>')
+api.add_resource(CompaniesISINList, '/companies_isin')
+api.add_resource(CompaniesSectorList, '/companies_sector')
+api.add_resource(CompanyIndustryGroupList, '/company_industry_group')
 
 # Import Groq client for poem generation
 from .llm.groq_llm import GroqClient

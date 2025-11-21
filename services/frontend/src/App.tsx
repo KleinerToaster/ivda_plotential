@@ -8,7 +8,7 @@ function App() {
       <AppBar position="static" color="primary">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Frederik Bomheuer 25-720-533
+            Plotential
           </Typography>
         </Toolbar>
       </AppBar>

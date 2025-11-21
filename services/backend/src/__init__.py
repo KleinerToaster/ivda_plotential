@@ -89,7 +89,7 @@ class CompaniesSectorList(Resource):
 
 class CompaniesSectorDetail(Resource):
     def get(self, isin):
-        cursor = companies_sector.find_one_or_404({"isin": isin})
+        cursor = companies_sector.find_one_or_404({"ISIN": isin})
         company = _company_sector_from_doc(cursor)
         return company.to_json()
 

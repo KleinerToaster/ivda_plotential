@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Container, Typography, Box, CardContent, Card } from "@mui/material";
+import { Container, Typography, Box, CardContent, Card, Button } from "@mui/material";
 import ScatterPlot from "./ScatterPlot";
-import LinePlot from "./LinePlot";
 import SelectableCard from "./SelectableCard";
-import BarPlot from "./BarPlot";
 import { AIPromptComponent } from "./AIPromptComponent";
+import { SectorDrillDown } from "./SectorDrillDown";
+import { CompanyWeightsAnalysis } from "./CompanyWeightsAnalysis";
+import { CompanyISIN } from "./types";
 
 function ConfigurationPanel() {
   // State for poem display
@@ -14,22 +15,16 @@ function ConfigurationPanel() {
   >(null);
 
   const [categories, setCategories] = useState({
-    values: ["All", "tech", "health", "bank"],
+    values: ["All", "Portfolio"],
     selectedValue: "All",
   });
 
-  // Define a proper company type
-  interface Company {
-    id: number;
-    name: string;
-    category: string;
-    founding_year: number;
-    employees: number;
-  }
+  // Control visibility of AI overlays
+  const [showPoemOverlay, setShowPoemOverlay] = useState(false);
 
   // State for companies with name and ID information
   const [companies, setCompanies] = useState({
-    values: [] as Company[],
+    values: [] as CompanyISIN[],
     selectedValue: 1,
   });
 
@@ -41,13 +36,23 @@ function ConfigurationPanel() {
   // Function to fetch companies from the backend
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:5000/companies");
+      const response = await fetch("http://127.0.0.1:5000/companies_isin");
       const data = await response.json();
 
-      if (data && data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped: CompanyISIN[] = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          country: item.country,
+          market_cap: item.market_cap,
+          stocks_owned: item.stocks_owned,
+          isin: item.isin,
+        }));
+
         setCompanies({
-          values: data,
-          selectedValue: data[0].id || 1,
+          values: mapped,
+          selectedValue: mapped[0].id || 1,
         });
       }
     } catch (error) {
@@ -69,9 +74,6 @@ function ConfigurationPanel() {
 
     if (companyExists) {
       setCompanies((prev) => ({ ...prev, selectedValue: companyId }));
-      // Trigger plots update
-      setLinePlotKey((prev) => prev + 1);
-      setBarPlotKey((prev) => prev + 1);
 
       // Fetch poem for the selected company
       fetchPoem(companyId);
@@ -158,8 +160,6 @@ function ConfigurationPanel() {
 
   // Keys for triggering re-renders
   const [scatterPlotKey, setScatterPlotKey] = useState(0);
-  const [linePlotKey, setLinePlotKey] = useState(0);
-  const [barPlotKey, setBarPlotKey] = useState(0);
 
   return (
     <Container maxWidth={false} sx={{ mt: 2 }}>
@@ -170,6 +170,12 @@ function ConfigurationPanel() {
           gap: 2,
         }}
       >
+
+
+
+        </Box>
+
+        {/* Right side with all visualizations */}
         <Box
           sx={{
             display: "flex",
@@ -180,118 +186,13 @@ function ConfigurationPanel() {
             pr: 1,
           }}
         >
-          <Box>
-            <Box sx={{ mt: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  color: "#111827",
-                  mb: 1,
-                }}
-              >
-                Company Overview
-              </Typography>
-
-              <SelectableCard
-                title="Select Category"
-                value={categories.selectedValue}
-                options={categories.values.map((category) => ({
-                  label: category,
-                  value: category,
-                }))}
-                onChange={(newValue) => {
-                  setCategories((prev) => ({
-                    ...prev,
-                    selectedValue: newValue,
-                  }));
-                  setScatterPlotKey((prev) => prev + 1);
-                }}
-                showValueDisplay={false}
-              />
-            </Box>
-            <Box sx={{ mt: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  color: "#111827",
-                  mb: 1,
-                }}
-              >
-                Profit View
-              </Typography>
-              <SelectableCard
-                title="Select a company"
-                value={companies.selectedValue}
-                options={companies.values.map((company) => ({
-                  label: company.name,
-                  value: company.id,
-                }))}
-                onChange={(newValue) => {
-                  setCompanies((prev) => ({
-                    ...prev,
-                    selectedValue: newValue,
-                  }));
-                  setLinePlotKey((prev) => prev + 1);
-                  setBarPlotKey((prev) => prev + 1);
-
-                  // Fetch poem and additional information for the selected company
-                  fetchPoem(newValue);
-                  fetchAdditionalInformation(newValue);
-                }}
-              />
-              <SelectableCard
-                title="Select an Algorithm"
-                value={algorithm.selectedValue}
-                options={algorithm.values.map((algo) => ({
-                  label: algo,
-                  value: algo,
-                }))}
-                onChange={(newValue) => {
-                  setAlgorithm((prev) => ({
-                    ...prev,
-                    selectedValue: newValue,
-                  }));
-                  setLinePlotKey((prev) => prev + 1);
-                }}
-                showValueDisplay={false}
-              />
-            </Box>
-          </Box>
-
-          {poem && (
-            <AIPromptComponent
-              title="AI Generated Poem"
-              content={poem}
-              inputLabel="Add keywords to customize the poem"
-              onSubmitPrompt={(keywords) => {
-                if (companies.selectedValue) {
-                  fetchPoem(companies.selectedValue, keywords);
-                }
-              }}
-            />
-          )}
-        </Box>
-
-        {/* Right side with all visualizations */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            height: "100%",
-          }}
-        >
           {/* Visualization section */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {/* Top row with scatter and line plots */}
+            {/* Top row with scatter plot and sector drill-down */}
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: "2fr 1fr",
                 gap: 2,
                 minHeight: "300px",
               }}
@@ -303,55 +204,38 @@ function ConfigurationPanel() {
                   onCompanyChange={changeCurrentlySelectedCompany}
                 />
               </Box>
-              <Box sx={{ height: "100%", border: "1px solid #eee", borderRadius: 1 }}>
-                <LinePlot
-                  key={linePlotKey}
-                  selectedCompany={companies.selectedValue}
-                  selectedCompanyName={
-                    companies.values.find(
-                      (company) => company.id === companies.selectedValue
-                    )?.name || ""
-                  }
-                  selectedAlgorithm={algorithm.selectedValue}
-                />
+              <Box sx={{ height: "100%" }}>
+                <SectorDrillDown selectedCategory={categories.selectedValue} />
               </Box>
             </Box>
-            
-            {/* Bar plot */}
-            <Box sx={{ minHeight: "250px", border: "1px solid #eee", borderRadius: 1 }}>
-              <BarPlot
-                key={`bar-${barPlotKey}-${scatterPlotKey}`}
-                selectedCompany={companies.selectedValue}
-                selectedCompanyName={
-                  companies.values.find(
-                    (company) => company.id === companies.selectedValue
-                  )?.name || ""
+
+            {/* Company weights analysis below */}
+            <Box>
+              <CompanyWeightsAnalysis />
+            </Box>
+                      <Box sx={{ mt: 2 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setShowPoemOverlay(true)}
+            >
+              Sector reasoning
+            </Button>
+            <AIPromptComponent
+              title="AI Generated Poem"
+              content={poem || "No poem yet. Select a company to generate one."}
+              inputLabel="Add keywords to customize the poem"
+              onSubmitPrompt={(keywords) => {
+                if (companies.selectedValue) {
+                  fetchPoem(companies.selectedValue, keywords);
                 }
-                selectedCategory={categories.selectedValue}
-              />
-            </Box>
+              }}
+              open={showPoemOverlay}
+              onClose={() => setShowPoemOverlay(false)}
+            />
           </Box>
-          
-          {/* AI Generated content */}
-          {additionalInformation && (
-            <Box sx={{ mb: 2 }}>
-              <AIPromptComponent
-                title="AI Generated Qualification List"
-                content={additionalInformation}
-                inputLabel="Add your qualifications or background information"
-                onSubmitPrompt={(qualifications) => {
-                  if (companies.selectedValue) {
-                    fetchAdditionalInformation(
-                      companies.selectedValue,
-                      qualifications
-                    );
-                  }
-                }}
-              />
-            </Box>
-          )}
+          </Box>
         </Box>
-      </Box>
     </Container>
   );
 }

@@ -34,8 +34,8 @@ function ScatterPlot({ selectedCategory, onCompanyChange }: ScatterPlotProps) {
 
   const fetchData = async () => {
     try {
-      // req URL to retrieve companies from backend with category filter
-      const reqUrl = `http://127.0.0.1:5000/companies?category=${selectedCategory}`;
+      // Retrieve companies from backend (ISIN-based data)
+      const reqUrl = `http://127.0.0.1:5000/companies_isin`;
       console.log("ReqURL " + reqUrl);
 
       // await response and data
@@ -50,9 +50,11 @@ function ScatterPlot({ selectedCategory, onCompanyChange }: ScatterPlotProps) {
 
       responseData.forEach((company: any) => {
         nameData.push(company.name);
-        xData.push(company.founding_year);
-        yData.push(company.employees);
-        categoryData.push(company.category || 'default'); // Store category for each company
+        // X-axis: market cap, Y-axis: stocks owned
+        xData.push(company.mkt_cap);
+        yData.push(company.stocks_owned);
+        // No explicit categories in ISIN data; use a default category
+        categoryData.push('default');
       });
 
       setScatterData({
@@ -67,78 +69,54 @@ function ScatterPlot({ selectedCategory, onCompanyChange }: ScatterPlotProps) {
     }
   };
 
-  // Create marker colors based on category and selection
-  const getMarkerColors = () => {
-    if (selectedCategory === 'All') {
-      // When showing all categories, color by category
-      return scatterData.category.map((cat, index) => 
-        index === selectedCompanyIndex ? '#800080' : categoryColors[cat as keyof typeof categoryColors] || categoryColors.default
-      );
-    } else {
-      // When filtering by category, use consistent category color but highlight selection
-      const categoryColor = categoryColors[selectedCategory as keyof typeof categoryColors] || categoryColors.default;
-      return scatterData.x.map((_, index) => 
-        index === selectedCompanyIndex ? '#800080' : categoryColor
-      );
-    }
-  };
-  
-  const markerColors = getMarkerColors();
-
   const createTraces = () => {
-    if (selectedCategory !== 'All') {
-      // Single trace for the selected category
-      return [
-        {
-          x: scatterData.x,
-          y: scatterData.y,
-          mode: 'markers' as const,
-          type: 'scatter' as const,
-          text: scatterData.name,
-          hoverinfo: 'text' as const,
-          name: selectedCategory,
-          marker: {
-            color: markerColors,
-            size: 12
-          }      
-        }
-      ];
+    // Determine indices for portfolio vs non-portfolio companies
+    const portfolioIndices = scatterData.rawData
+      .map((company, i) => ((company.stocks_owned ?? 0) > 0 ? i : -1))
+      .filter((i) => i !== -1);
+
+    const otherIndices = scatterData.rawData
+      .map((company, i) => ((company.stocks_owned ?? 0) > 0 ? -1 : i))
+      .filter((i) => i !== -1);
+
+    const buildTrace = (indices: number[], name: string, baseColor: string) => {
+      if (indices.length === 0) return null;
+
+      const xValues = indices.map((i) => scatterData.x[i]);
+      const yValues = indices.map((i) => scatterData.y[i]);
+      const textValues = indices.map((i) => scatterData.name[i]);
+      const colors = indices.map((i) =>
+        i === selectedCompanyIndex ? '#800080' : baseColor
+      );
+
+      return {
+        x: xValues,
+        y: yValues,
+        mode: 'markers' as const,
+        type: 'scatter' as const,
+        text: textValues,
+        hoverinfo: 'text' as const,
+        name,
+        marker: {
+          color: colors,
+          size: 12,
+        },
+      };
+    };
+
+    const traces: any[] = [];
+
+    if (selectedCategory.toLowerCase() === 'portfolio') {
+      const portfolioTrace = buildTrace(portfolioIndices, 'Portfolio', '#0F9D58');
+      if (portfolioTrace) traces.push(portfolioTrace);
     } else {
-      // When 'All' is selected, create a trace for each category for better legend
-      const categories = ['tech', 'health', 'bank'];
-      const traces = [];
-      
-      for (const category of categories) {
-        const indices = scatterData.category
-          .map((cat, i) => (cat === category ? i : -1))
-          .filter(i => i !== -1);
-        
-        if (indices.length > 0) {
-          const xValues = indices.map(i => scatterData.x[i]);
-          const yValues = indices.map(i => scatterData.y[i]);
-          const textValues = indices.map(i => scatterData.name[i]);
-          const colorValues = indices.map(i => 
-            i === selectedCompanyIndex ? '#3777ee' : categoryColors[category as keyof typeof categoryColors]
-          );
-          
-          traces.push({
-            x: xValues,
-            y: yValues,
-            mode: 'markers' as const,
-            type: 'scatter' as const,
-            text: textValues,
-            hoverinfo: 'text' as const,
-            name: category,
-            marker: {
-              color: categoryColors[category as keyof typeof categoryColors],
-              size: 12
-            }      
-          });
-        }
-      }
-      
-      return traces;
+      const allTrace = buildTrace(otherIndices, 'All', '#DB4437');
+      const portfolioTrace = buildTrace(portfolioIndices, 'Portfolio', '#0F9D58');
+      if (allTrace) traces.push(allTrace);
+      if (portfolioTrace) traces.push(portfolioTrace);
     }
+
+    return traces;
   };
   
   // filter ability
@@ -161,7 +139,7 @@ function ScatterPlot({ selectedCategory, onCompanyChange }: ScatterPlotProps) {
 
   const layout = {
     title: {
-      text: `Overview of ${selectedCategory} Companies`,
+      text: `Market Cap vs Stocks Owned`,
       font: {
         size: 18,
       },
@@ -169,14 +147,14 @@ function ScatterPlot({ selectedCategory, onCompanyChange }: ScatterPlotProps) {
     height: window.innerHeight * 0.85, // Slightly reduce height to make room for title
     xaxis: { 
       title: {
-        text: 'Founding Year',
+        text: 'Market Cap (EUR)',
         font: { size: 14 },
         standoff: 15  // Add some padding
       }
     },
     yaxis: { 
       title: {
-        text: 'Employees',
+        text: 'Stocks Owned',
         font: { size: 14 },
         standoff: 15  // Add some padding
       }

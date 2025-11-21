@@ -21,13 +21,47 @@ api = Api(app)
 
 def _company_isin_from_doc(doc) -> CompanyISIN:
     return CompanyISIN(
-        description=doc.get("Description") or doc.get("description"),
-        id=doc.get("ID") or doc.get("id"),
-        isin=doc.get("ISIN") or doc.get("isin"),
-        name=doc.get("Name") or doc.get("name"),
-        country=str(doc.get("country") or doc.get("Country") or ""),
-        mkt_cap=int(doc.get("mktCap (EUR)") or doc.get("mkt_cap") or 0),
-        stocks_owned=doc.get("stocksOwned") or doc.get("stocks_owned", 0),
+        description=doc.get("Description"),
+        id=doc.get("ID"),
+        isin=doc.get("ISIN"),
+        name=doc.get("Name"),
+        country=str(doc.get("country") or ""),
+        mkt_cap=int(doc.get("mktCap (EUR)") or 0),
+        stocks_owned=doc.get("stocksOwned") or 0,
+    )
+
+def _company_sector_from_doc(doc) -> CompanySector:
+    return CompanySector(
+        communication_services=doc.get("Communication Services"),
+        communication_services_u=doc.get("Communication Services[u]"),
+        consumer_discretionary=doc.get("Consumer Discretionary"),
+        consumer_discretionary_u=doc.get("Consumer Discretionary[u]"),
+        consumer_staples=doc.get("Consumer Staples"),
+        consumer_staples_u=doc.get("Consumer Staples[u]"),
+        description=doc.get("Description"),
+        energy=doc.get("Energy"),
+        energy_u=doc.get("Energy[u]"),
+        financials=doc.get("Financials"),
+        financials_u=doc.get("Financials[u]"),
+        gics_level=doc.get("GICS Level"),
+        gics_sector=doc.get("GICS Sector"),
+        health_care=doc.get("Health Care"),
+        health_care_u=doc.get("Health Care[u]"),
+        id=doc.get("ID"),
+        isin=doc.get("ISIN"),
+        industrials=doc.get("Industrials"),
+        industrials_u=doc.get("Industrials[u]"),
+        information_technology=doc.get("Information Technology"),
+        information_technology_u=doc.get("Information Technology[u]"),
+        materials=doc.get("Materials"),
+        materials_u=doc.get("Materials[u]"),
+        name=doc.get("Name"),
+        parse_date=doc.get("Parse Date"),
+        real_estate=doc.get("Real Estate"),
+        real_estate_u=doc.get("Real Estate[u]"),
+        utilities=doc.get("Utilities"),
+        utilities_u=doc.get("Utilities[u]"),
+        confidence=doc.get("confidence"),
     )
 
 class CompaniesISINList(Resource):
@@ -51,12 +85,12 @@ class CompaniesISIN(Resource):
 class CompaniesSectorList(Resource):
     def get(self):
         cursor = companies_sector.find()
-        return [CompanySector(**doc).to_json() for doc in cursor]
+        return [_company_sector_from_doc(doc).to_json() for doc in cursor]
 
 class CompaniesSectorDetail(Resource):
     def get(self, isin):
         cursor = companies_sector.find_one_or_404({"isin": isin})
-        company = CompanySector(**cursor)
+        company = _company_sector_from_doc(cursor)
         return company.to_json()
 
 class CompanyIndustryGroupList(Resource):

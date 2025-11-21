@@ -1,6 +1,6 @@
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class CompanyISIN(BaseModel):
     description: str
@@ -14,35 +14,35 @@ class CompanyISIN(BaseModel):
         return jsonable_encoder(self, exclude_none=True)
 
 class CompanySector(BaseModel):
-    communication_services: int
-    communication_services_u: int
-    consumer_discretionary: int
-    consumer_discretionary_u: int
-    consumer_staples: int
-    consumer_staples_u: int
+    communication_services: Optional[float] = None
+    communication_services_u: Optional[float] = None
+    consumer_discretionary: Optional[float] = None
+    consumer_discretionary_u: Optional[float] = None
+    consumer_staples: Optional[float] = None
+    consumer_staples_u: Optional[float] = None
     description: str
-    energy: int
-    energy_u: int
-    financials: int
-    financials_u: int
+    energy: Optional[float] = None
+    energy_u: Optional[float] = None
+    financials: Optional[float] = None
+    financials_u: Optional[float] = None
     gics_level: str
     gics_sector: str
-    health_care: int
-    health_care_u: int
+    health_care: Optional[float] = None
+    health_care_u: Optional[float] = None
     id: int
     isin: str
-    industrials: int
-    industrials_u: int
-    information_technology: int
-    information_technology_u: int
-    materials: int
-    materials_u: int
+    industrials: Optional[float] = None
+    industrials_u: Optional[float] = None
+    information_technology: Optional[float] = None
+    information_technology_u: Optional[float] = None
+    materials: Optional[float] = None
+    materials_u: Optional[float] = None
     name: str
     parse_date: str
-    real_estate: int
-    real_estate_u: int
-    utilities: int
-    utilities_u: int
+    real_estate: Optional[float] = None
+    real_estate_u: Optional[float] = None
+    utilities: Optional[float] = None
+    utilities_u: Optional[float] = None
     confidence: float
     def to_json(self):
         return jsonable_encoder(self, exclude_none=True)

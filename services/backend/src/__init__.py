@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_restx import Resource, Api
 from flask_pymongo import PyMongo
 from pymongo.collection import Collection
-from .model import CompanyISIN, CompanySector
+from .model import CompanyISIN, CompanySector, CompanyIndustryGroup
 from flask import request
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -16,6 +16,7 @@ pymongo = PyMongo(app)
 # Get a reference to the companies collection.
 companies_isin: Collection = pymongo.db.companyISIN
 companies_sector: Collection = pymongo.db.companySector
+companies_industry_group: Collection = pymongo.db.companyIndustryGroups
 api = Api(app)
 
 def _company_isin_from_doc(doc) -> CompanyISIN:
@@ -58,11 +59,24 @@ class CompaniesSectorDetail(Resource):
         company = CompanySector(**cursor)
         return company.to_json()
 
+class CompanyIndustryGroupList(Resource):
+    def get(self):
+        cursor = companies_industry_group.find()
+        # Return raw docs but make them JSON-serializable by stringifying ObjectId
+        docs = []
+        for doc in cursor:
+            doc = dict(doc)
+            if "_id" in doc:
+                doc["_id"] = str(doc["_id"])
+            docs.append(doc)
+        return docs
+
 api.add_resource(CompaniesISIN, '/companies_isin/<string:isin>')
 api.add_resource(CompaniesSectorDetail, '/companies_sector/<string:isin>')
 api.add_resource(CompanyISINDetail, '/company_isin/<string:isin>')
 api.add_resource(CompaniesISINList, '/companies_isin')
 api.add_resource(CompaniesSectorList, '/companies_sector')
+api.add_resource(CompanyIndustryGroupList, '/company_industry_group')
 
 # Import Groq client for poem generation
 from .llm.groq_llm import GroqClient

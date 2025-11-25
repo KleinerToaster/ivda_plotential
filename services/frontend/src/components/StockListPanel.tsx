@@ -384,8 +384,14 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
   const subsetWeights = subsetStocks.map((s) => s.percentage);
 
   const [expandedSectors, setExpandedSectors] = useState<Set<string>>(new Set());
+  const [scatterSector, setScatterSector] = useState<string>(
+    () => allSectorNames[0] ?? ""
+  );
 
   const handleToggleSector = (sector: string) => {
+    // Set this sector as the x-axis for the scatterplot
+    setScatterSector(sector);
+    
     setExpandedSectors((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(sector)) {
@@ -397,9 +403,6 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
     });
   };
 
-  const [scatterSector, setScatterSector] = useState<string>(
-    () => allSectorNames[0] ?? ""
-  );
   const [scatterIG, setScatterIG] = useState<string>(
     () => allIGNames[0] ?? ""
   );
@@ -416,17 +419,37 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
     }
   }, [scatterIG, allIGNames]);
 
-  const scatterData = useMemo(
-    () =>
-      combinedStocks
-        .map((s) => ({
-          x: s.sectors[scatterSector] ?? 0,
-          y: s.industryGroups[scatterIG] ?? 0,
-          name: s.name,
-        }))
-        .filter((p) => p.x !== 0 || p.y !== 0),
-    [combinedStocks, scatterSector, scatterIG]
-  );
+  const scatterData = useMemo(() => {
+    const dataByIG: Record<string, { x: number; y: number; name: string; ig: string }[]> = {};
+    
+    // Get industry groups that belong to the selected sector
+    const sectorIGs = SECTOR_TO_INDUSTRY_GROUPS[scatterSector] || [];
+    
+    combinedStocks.forEach((stock) => {
+      const sectorWeight = stock.sectors[scatterSector] ?? 0;
+      
+      // Only process if stock has weight in this sector
+      if (sectorWeight > 0) {
+        // Create a tuple only for industry groups that belong to this sector
+        sectorIGs.forEach((ig) => {
+          const igWeight = stock.industryGroups[ig] ?? 0;
+          if (igWeight > 0) {
+            if (!dataByIG[ig]) {
+              dataByIG[ig] = [];
+            }
+            dataByIG[ig].push({
+              x: sectorWeight,
+              y: igWeight,
+              name: stock.name,
+              ig: ig,
+            });
+          }
+        });
+      }
+    });
+    
+    return dataByIG;
+  }, [combinedStocks, scatterSector]);
 
   const [distStockIsin, setDistStockIsin] = useState<string>(
     combinedStocks[0]?.isin ?? ""
@@ -781,7 +804,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
 
                   <Paper
                     variant="outlined"
-                    sx={{ maxHeight: 320, overflowY: "auto" }}
+                    sx={{ maxHeight: 420, overflowY: "auto" }}
                   >
                     <List dense disablePadding>
                       <ListItem sx={{ bgcolor: "#f5f5f5", py: 1 }}>
@@ -854,7 +877,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                       }
                       layout={
                         {
-                          height: 180,
+                          height: 160,
                           margin: { l: 60, r: 15, t: 0, b: 25 },
                           xaxis: { title: { text: "Count" } },
                           yaxis: {
@@ -884,67 +907,26 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                     />
                   </Paper>
 
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 1.5,
-                      mb: 0.5,
-                    }}
-                  >
-                    <FormControl fullWidth size="small">
-                      <InputLabel>y-axis (Industry Group)</InputLabel>
-                      <Select
-                        value={scatterIG}
-                        label="y-axis (Industry Group)"
-                        onChange={(e) => setScatterIG(e.target.value)}
-                      >
-                        {allIGNames.map((ig) => (
-                          <MenuItem key={ig} value={ig}>
-                            {ig}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-
-                    <FormControl fullWidth size="small">
-                      <InputLabel>x-axis (Sector)</InputLabel>
-                      <Select
-                        value={scatterSector}
-                        label="x-axis (Sector)"
-                        onChange={(e) => setScatterSector(e.target.value)}
-                      >
-                        {allSectorNames.map((sec) => (
-                          <MenuItem key={sec} value={sec}>
-                            {sec}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
-
                   <Plot
                     data={
-                      [
-                        {
-                          x: scatterData.map((p) => p.x),
-                          y: scatterData.map((p) => p.y),
-                          text: scatterData.map((p) => p.name),
-                          mode: "markers",
-                          type: "scatter",
-                          marker: { size: 9, color: "black" },
-                          name: "Stocks",
-                          hovertemplate:
-                            "%{text}<br>" +
-                            `${scatterSector}: %{x:.1f}%<br>` +
-                            `${scatterIG}: %{y:.1f}%<extra></extra>`,
-                        },
-                      ] as any
+                      Object.entries(scatterData).map(([ig, points], idx) => ({
+                        x: points.map((p) => p.x),
+                        y: points.map((p) => p.y),
+                        text: points.map((p) => p.name),
+                        mode: "markers",
+                        type: "scatter",
+                        marker: { size: 7 },
+                        name: ig,
+                        hovertemplate:
+                          "%{text}<br>" +
+                          `${scatterSector}: %{x:.1f}%<br>` +
+                          `${ig}: %{y:.1f}%<extra></extra>`,
+                      })) as any
                     }
                     layout={
                       {
-                        height: 160,
-                        margin: { l: 60, r: 20, t: 5, b: 40 },
+                        height: 340,
+                        margin: { l: 60, r: 20, t: 0, b: 40 },
                         xaxis: {
                           title: {
                             text: scatterSector || "Sector weight (%)",
@@ -953,9 +935,17 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                         },
                         yaxis: {
                           title: {
-                            text: scatterIG || "Industry-group weight (%)",
+                            text: "Industry Group weight (%)",
                           },
                           range: [0, 100],
+                        },
+                        showlegend: true,
+                        legend: {
+                          orientation: "h",
+                          x: 0.5,
+                          y: 1.12,
+                          xanchor: "center",
+                          yanchor: "top",
                         },
                       } as any
                     }

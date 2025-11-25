@@ -1,0 +1,2352 @@
+{
+  "countries": {
+    "AT": {
+      "level": "country",
+      "code": "AT",
+      "name": "Austria",
+      "benchmarks": {
+        "Consumer Discretionary": {
+          "sector_u": 0.135,
+          "industry_groups": {
+            "Automobiles & Components": 0.135
+          }
+        },
+        "Energy": {
+          "sector_u": 0.19000000000000003,
+          "industry_groups": {
+            "Energy": 0.19000000000000003
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.15222222222222223,
+          "industry_groups": {
+            "Capital Goods": 0.18666666666666668,
+            "Commercial & Professional Services": 0.14,
+            "Transportation": 0.13
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.135,
+          "industry_groups": {
+            "Software & Services": 0.135,
+            "Technology Hardware & Equipment": 0.135
+          }
+        },
+        "Materials": {
+          "sector_u": 0.18666666666666668,
+          "industry_groups": {
+            "Materials": 0.18666666666666668
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.13,
+          "industry_groups": {
+            "Real Estate Management & Development": 0.13
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.14,
+          "industry_groups": {
+            "Utilities": 0.14
+          }
+        }
+      }
+    },
+    "AU": {
+      "level": "country",
+      "code": "AU",
+      "name": "Australia",
+      "benchmarks": {
+        "Energy": {
+          "sector_u": 0.09,
+          "industry_groups": {
+            "Energy": 0.09
+          }
+        },
+        "Materials": {
+          "sector_u": 0.09,
+          "industry_groups": {
+            "Materials": 0.09
+          }
+        }
+      }
+    },
+    "BE": {
+      "level": "country",
+      "code": "BE",
+      "name": "Belgium",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.28,
+          "industry_groups": {
+            "Media & Entertainment": 0.18,
+            "Telecommunication Services": 0.38
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.1902777777777778,
+          "industry_groups": {
+            "Automobiles & Components": 0.18333333333333335,
+            "Consumer Services": 0.2175,
+            "Retailing": 0.17
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.19666666666666666,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.22,
+            "Food Beverage & Tobacco": 0.15000000000000002,
+            "Household & Personal Products": 0.22
+          }
+        },
+        "Energy": {
+          "sector_u": 0.32,
+          "industry_groups": {
+            "Energy": 0.32
+          }
+        },
+        "Financials": {
+          "sector_u": 0.20750000000000002,
+          "industry_groups": {
+            "Banks": 0.2275,
+            "Financial Services": 0.225,
+            "Insurance": 0.16999999999999998
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.21916666666666668,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.235,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.20333333333333334
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.20285714285714285,
+          "industry_groups": {
+            "Capital Goods": 0.21857142857142858,
+            "Commercial & Professional Services": 0.19000000000000003,
+            "Transportation": 0.2
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.19749999999999998,
+          "industry_groups": {
+            "Software & Services": 0.22999999999999998,
+            "Technology Hardware & Equipment": 0.16499999999999998
+          }
+        },
+        "Materials": {
+          "sector_u": 0.165,
+          "industry_groups": {
+            "Materials": 0.165
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.24,
+          "industry_groups": {
+            "Real Estate Management & Development": 0.24
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.33499999999999996,
+          "industry_groups": {
+            "Utilities": 0.33499999999999996
+          }
+        }
+      }
+    },
+    "BM": {
+      "level": "country",
+      "code": "BM",
+      "name": "Bermuda",
+      "benchmarks": {
+        "Consumer Discretionary": {
+          "sector_u": 0.1,
+          "industry_groups": {
+            "Consumer Services": 0.1
+          }
+        },
+        "Financials": {
+          "sector_u": 0.15714285714285717,
+          "industry_groups": {
+            "Banks": 0.16142857142857145,
+            "Financial Services": 0.15857142857142859,
+            "Insurance": 0.15142857142857144
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.12722222222222224,
+          "industry_groups": {
+            "Capital Goods": 0.10500000000000001,
+            "Commercial & Professional Services": 0.16,
+            "Transportation": 0.11666666666666668
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.142,
+          "industry_groups": {
+            "Software & Services": 0.142
+          }
+        },
+        "Materials": {
+          "sector_u": 0.11,
+          "industry_groups": {
+            "Materials": 0.11
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.19333333333333333,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.23,
+            "Real Estate Management & Development": 0.15666666666666665
+          }
+        }
+      }
+    },
+    "CA": {
+      "level": "country",
+      "code": "CA",
+      "name": "Canada",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.19666666666666666,
+          "industry_groups": {
+            "Media & Entertainment": 0.19666666666666666
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.15055357142857145,
+          "industry_groups": {
+            "Automobiles & Components": 0.1657142857142857,
+            "Consumer Durables & Apparel": 0.14,
+            "Consumer Services": 0.154,
+            "Retailing": 0.14250000000000002
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.15,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.15
+          }
+        },
+        "Energy": {
+          "sector_u": 0.17096774193548386,
+          "industry_groups": {
+            "Energy": 0.17096774193548386
+          }
+        },
+        "Financials": {
+          "sector_u": 0.1578917378917379,
+          "industry_groups": {
+            "Banks": 0.1511111111111111,
+            "Financial Services": 0.17923076923076925,
+            "Insurance": 0.14333333333333334
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.265,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.315,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.21500000000000002
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.17825396825396825,
+          "industry_groups": {
+            "Capital Goods": 0.1575,
+            "Commercial & Professional Services": 0.20583333333333334,
+            "Transportation": 0.17142857142857146
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.21141304347826087,
+          "industry_groups": {
+            "Software & Services": 0.17782608695652175,
+            "Technology Hardware & Equipment": 0.245
+          }
+        },
+        "Materials": {
+          "sector_u": 0.16633333333333333,
+          "industry_groups": {
+            "Materials": 0.16633333333333333
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.165625,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.16999999999999998,
+            "Real Estate Management & Development": 0.16125
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.162,
+          "industry_groups": {
+            "Utilities": 0.162
+          }
+        }
+      }
+    },
+    "CH": {
+      "level": "country",
+      "code": "CH",
+      "name": "Switzerland",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.1,
+          "industry_groups": {
+            "Media & Entertainment": 0.1,
+            "Telecommunication Services": 0.1
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.21834469696969694,
+          "industry_groups": {
+            "Automobiles & Components": 0.16799999999999998,
+            "Consumer Durables & Apparel": 0.20454545454545456,
+            "Consumer Services": 0.2525,
+            "Retailing": 0.24833333333333332
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.23727380952380953,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.21125,
+            "Food Beverage & Tobacco": 0.2785714285714286,
+            "Household & Personal Products": 0.22199999999999998
+          }
+        },
+        "Energy": {
+          "sector_u": 0.20800000000000002,
+          "industry_groups": {
+            "Energy": 0.20800000000000002
+          }
+        },
+        "Financials": {
+          "sector_u": 0.20932539682539683,
+          "industry_groups": {
+            "Banks": 0.19416666666666668,
+            "Financial Services": 0.18214285714285713,
+            "Insurance": 0.25166666666666665
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.2508840579710145,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.23133333333333334,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.27043478260869563
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.21306156156156156,
+          "industry_groups": {
+            "Capital Goods": 0.22135135135135134,
+            "Commercial & Professional Services": 0.18583333333333332,
+            "Transportation": 0.23199999999999998
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.19683094859565445,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.17,
+            "Software & Services": 0.21108108108108106,
+            "Technology Hardware & Equipment": 0.20941176470588235
+          }
+        },
+        "Materials": {
+          "sector_u": 0.19733333333333333,
+          "industry_groups": {
+            "Materials": 0.19733333333333333
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.16083333333333333,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.19666666666666666,
+            "Real Estate Management & Development": 0.125
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.22400000000000003,
+          "industry_groups": {
+            "Utilities": 0.22400000000000003
+          }
+        }
+      }
+    },
+    "CN": {
+      "level": "country",
+      "code": "CN",
+      "name": "China",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.15333333333333332,
+          "industry_groups": {
+            "Media & Entertainment": 0.16,
+            "Telecommunication Services": 0.14666666666666667
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.14125000000000001,
+          "industry_groups": {
+            "Automobiles & Components": 0.125,
+            "Consumer Durables & Apparel": 0.16,
+            "Consumer Services": 0.12,
+            "Retailing": 0.16
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.16,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.16,
+            "Food Beverage & Tobacco": 0.16,
+            "Household & Personal Products": 0.16
+          }
+        },
+        "Energy": {
+          "sector_u": 0.16,
+          "industry_groups": {
+            "Energy": 0.16
+          }
+        },
+        "Financials": {
+          "sector_u": 0.1425,
+          "industry_groups": {
+            "Banks": 0.13,
+            "Financial Services": 0.13,
+            "Insurance": 0.1675
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.18166666666666667,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.20333333333333334,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.16
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.13466666666666666,
+          "industry_groups": {
+            "Capital Goods": 0.13599999999999998,
+            "Commercial & Professional Services": 0.13333333333333333
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.16,
+          "industry_groups": {
+            "Software & Services": 0.16,
+            "Technology Hardware & Equipment": 0.16
+          }
+        },
+        "Materials": {
+          "sector_u": 0.168,
+          "industry_groups": {
+            "Materials": 0.168
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.1375,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.16,
+            "Real Estate Management & Development": 0.115
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.1366666666666667,
+          "industry_groups": {
+            "Utilities": 0.1366666666666667
+          }
+        }
+      }
+    },
+    "DE": {
+      "level": "country",
+      "code": "DE",
+      "name": "Germany",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.24,
+          "industry_groups": {
+            "Media & Entertainment": 0.24,
+            "Telecommunication Services": 0.24
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.2908730158730159,
+          "industry_groups": {
+            "Automobiles & Components": 0.3085714285714286,
+            "Consumer Durables & Apparel": 0.30000000000000004,
+            "Consumer Services": 0.2777777777777778,
+            "Retailing": 0.27714285714285714
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.32666666666666666,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.325,
+            "Food Beverage & Tobacco": 0.335,
+            "Household & Personal Products": 0.32
+          }
+        },
+        "Energy": {
+          "sector_u": 0.276,
+          "industry_groups": {
+            "Energy": 0.276
+          }
+        },
+        "Financials": {
+          "sector_u": 0.24574074074074073,
+          "industry_groups": {
+            "Banks": 0.24833333333333332,
+            "Financial Services": 0.2488888888888889,
+            "Insurance": 0.24000000000000002
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.2791666666666667,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.31333333333333335,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.245
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.29881802721088435,
+          "industry_groups": {
+            "Capital Goods": 0.29877551020408166,
+            "Commercial & Professional Services": 0.2914285714285714,
+            "Transportation": 0.30625
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.31364159891598914,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.3275,
+            "Software & Services": 0.29634146341463413,
+            "Technology Hardware & Equipment": 0.31708333333333333
+          }
+        },
+        "Materials": {
+          "sector_u": 0.3,
+          "industry_groups": {
+            "Materials": 0.3
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.163,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.14,
+            "Real Estate Management & Development": 0.186
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.23666666666666666,
+          "industry_groups": {
+            "Utilities": 0.23666666666666666
+          }
+        }
+      }
+    },
+    "DK": {
+      "level": "country",
+      "code": "DK",
+      "name": "Denmark",
+      "benchmarks": {
+        "Consumer Discretionary": {
+          "sector_u": 0.12,
+          "industry_groups": {
+            "Automobiles & Components": 0.12,
+            "Retailing": 0.12
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.23500000000000001,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.27,
+            "Food Beverage & Tobacco": 0.2
+          }
+        },
+        "Energy": {
+          "sector_u": 0.13,
+          "industry_groups": {
+            "Energy": 0.13
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.1575,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.12,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.195
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.13,
+          "industry_groups": {
+            "Capital Goods": 0.13
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.12,
+          "industry_groups": {
+            "Software & Services": 0.12,
+            "Technology Hardware & Equipment": 0.12
+          }
+        },
+        "Materials": {
+          "sector_u": 0.13,
+          "industry_groups": {
+            "Materials": 0.13
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.13,
+          "industry_groups": {
+            "Utilities": 0.13
+          }
+        }
+      }
+    },
+    "ES": {
+      "level": "country",
+      "code": "ES",
+      "name": "Spain",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.09,
+          "industry_groups": {
+            "Media & Entertainment": 0.09
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.11,
+          "industry_groups": {
+            "Automobiles & Components": 0.11,
+            "Consumer Durables & Apparel": 0.11,
+            "Consumer Services": 0.11,
+            "Retailing": 0.11
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.16,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.16
+          }
+        },
+        "Energy": {
+          "sector_u": 0.28,
+          "industry_groups": {
+            "Energy": 0.28
+          }
+        },
+        "Financials": {
+          "sector_u": 0.095,
+          "industry_groups": {
+            "Banks": 0.1,
+            "Financial Services": 0.09
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.16,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.16,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.16
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.135,
+          "industry_groups": {
+            "Commercial & Professional Services": 0.11,
+            "Transportation": 0.16
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.1,
+          "industry_groups": {
+            "Software & Services": 0.1
+          }
+        },
+        "Materials": {
+          "sector_u": 0.22000000000000003,
+          "industry_groups": {
+            "Materials": 0.22000000000000003
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.17666666666666667,
+          "industry_groups": {
+            "Utilities": 0.17666666666666667
+          }
+        }
+      }
+    },
+    "FR": {
+      "level": "country",
+      "code": "FR",
+      "name": "France",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.2659090909090909,
+          "industry_groups": {
+            "Media & Entertainment": 0.2318181818181818,
+            "Telecommunication Services": 0.3
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.2473973377166312,
+          "industry_groups": {
+            "Automobiles & Components": 0.26913043478260873,
+            "Consumer Durables & Apparel": 0.2645454545454546,
+            "Consumer Services": 0.214375,
+            "Retailing": 0.24153846153846154
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.24175213675213678,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.23833333333333334,
+            "Food Beverage & Tobacco": 0.22999999999999998,
+            "Household & Personal Products": 0.2569230769230769
+          }
+        },
+        "Energy": {
+          "sector_u": 0.24428571428571427,
+          "industry_groups": {
+            "Energy": 0.24428571428571427
+          }
+        },
+        "Financials": {
+          "sector_u": 0.21775000000000003,
+          "industry_groups": {
+            "Banks": 0.215,
+            "Financial Services": 0.21625,
+            "Insurance": 0.22200000000000003
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.19517857142857142,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.2175,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.17285714285714285
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.24087301587301588,
+          "industry_groups": {
+            "Capital Goods": 0.24642857142857144,
+            "Commercial & Professional Services": 0.23333333333333334,
+            "Transportation": 0.24285714285714285
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.2459047619047619,
+          "industry_groups": {
+            "Software & Services": 0.22380952380952382,
+            "Technology Hardware & Equipment": 0.26799999999999996
+          }
+        },
+        "Materials": {
+          "sector_u": 0.20736842105263156,
+          "industry_groups": {
+            "Materials": 0.20736842105263156
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.18602272727272728,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.1875,
+            "Real Estate Management & Development": 0.18454545454545457
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.21636363636363634,
+          "industry_groups": {
+            "Utilities": 0.21636363636363634
+          }
+        }
+      }
+    },
+    "GB": {
+      "level": "country",
+      "code": "GB",
+      "name": "United Kingdom",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.180625,
+          "industry_groups": {
+            "Media & Entertainment": 0.23125,
+            "Telecommunication Services": 0.13
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.185875,
+          "industry_groups": {
+            "Automobiles & Components": 0.17250000000000001,
+            "Consumer Durables & Apparel": 0.17500000000000002,
+            "Consumer Services": 0.18,
+            "Retailing": 0.21600000000000003
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.17708333333333334,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.165,
+            "Food Beverage & Tobacco": 0.1775,
+            "Household & Personal Products": 0.18875
+          }
+        },
+        "Energy": {
+          "sector_u": 0.1688235294117647,
+          "industry_groups": {
+            "Energy": 0.1688235294117647
+          }
+        },
+        "Financials": {
+          "sector_u": 0.17152882205513786,
+          "industry_groups": {
+            "Banks": 0.19,
+            "Financial Services": 0.1731578947368421,
+            "Insurance": 0.15142857142857144
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.22999999999999998,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.25,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.21
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.18660493827160496,
+          "industry_groups": {
+            "Capital Goods": 0.18703703703703703,
+            "Commercial & Professional Services": 0.2327777777777778,
+            "Transportation": 0.14
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.222304347826087,
+          "industry_groups": {
+            "Software & Services": 0.22260869565217392,
+            "Technology Hardware & Equipment": 0.22200000000000003
+          }
+        },
+        "Materials": {
+          "sector_u": 0.17411764705882352,
+          "industry_groups": {
+            "Materials": 0.17411764705882352
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.17016666666666666,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.12333333333333334,
+            "Real Estate Management & Development": 0.217
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.15000000000000002,
+          "industry_groups": {
+            "Utilities": 0.15000000000000002
+          }
+        }
+      }
+    },
+    "HK": {
+      "level": "country",
+      "code": "HK",
+      "name": "Hong Kong",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.245,
+          "industry_groups": {
+            "Media & Entertainment": 0.16,
+            "Telecommunication Services": 0.33
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.2446875,
+          "industry_groups": {
+            "Automobiles & Components": 0.2025,
+            "Consumer Durables & Apparel": 0.25,
+            "Consumer Services": 0.23625,
+            "Retailing": 0.29000000000000004
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.26499999999999996,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.32,
+            "Food Beverage & Tobacco": 0.35,
+            "Household & Personal Products": 0.125
+          }
+        },
+        "Energy": {
+          "sector_u": 0.23500000000000001,
+          "industry_groups": {
+            "Energy": 0.23500000000000001
+          }
+        },
+        "Financials": {
+          "sector_u": 0.21813888888888888,
+          "industry_groups": {
+            "Banks": 0.194,
+            "Financial Services": 0.25375000000000003,
+            "Insurance": 0.20666666666666667
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.345,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.34,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.35
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.16825396825396824,
+          "industry_groups": {
+            "Capital Goods": 0.20142857142857143,
+            "Commercial & Professional Services": 0.15,
+            "Transportation": 0.15333333333333332
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.27525,
+          "industry_groups": {
+            "Software & Services": 0.2925,
+            "Technology Hardware & Equipment": 0.258
+          }
+        },
+        "Materials": {
+          "sector_u": 0.2833333333333333,
+          "industry_groups": {
+            "Materials": 0.2833333333333333
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.22062500000000002,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.245,
+            "Real Estate Management & Development": 0.19625
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.20000000000000004,
+          "industry_groups": {
+            "Utilities": 0.20000000000000004
+          }
+        }
+      }
+    },
+    "IE": {
+      "level": "country",
+      "code": "IE",
+      "name": "Ireland",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.18,
+          "industry_groups": {
+            "Media & Entertainment": 0.18
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.20708333333333334,
+          "industry_groups": {
+            "Automobiles & Components": 0.22166666666666668,
+            "Consumer Durables & Apparel": 0.23666666666666666,
+            "Consumer Services": 0.19,
+            "Retailing": 0.18
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.125,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.11,
+            "Food Beverage & Tobacco": 0.14
+          }
+        },
+        "Energy": {
+          "sector_u": 0.27,
+          "industry_groups": {
+            "Energy": 0.27
+          }
+        },
+        "Financials": {
+          "sector_u": 0.22058201058201057,
+          "industry_groups": {
+            "Banks": 0.21888888888888888,
+            "Financial Services": 0.25857142857142856,
+            "Insurance": 0.1842857142857143
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.153,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.18,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.126
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.22303030303030302,
+          "industry_groups": {
+            "Capital Goods": 0.2590909090909091,
+            "Commercial & Professional Services": 0.15,
+            "Transportation": 0.26
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.21784722222222222,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.26,
+            "Software & Services": 0.21687499999999998,
+            "Technology Hardware & Equipment": 0.17666666666666667
+          }
+        },
+        "Materials": {
+          "sector_u": 0.2733333333333334,
+          "industry_groups": {
+            "Materials": 0.2733333333333334
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.12,
+          "industry_groups": {
+            "Real Estate Management & Development": 0.12
+          }
+        }
+      }
+    },
+    "IL": {
+      "level": "country",
+      "code": "IL",
+      "name": "Israel",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.34,
+          "industry_groups": {
+            "Media & Entertainment": 0.34,
+            "Telecommunication Services": 0.34
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.32,
+          "industry_groups": {
+            "Consumer Services": 0.32
+          }
+        },
+        "Financials": {
+          "sector_u": 0.31,
+          "industry_groups": {
+            "Banks": 0.31
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.32,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.32
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.32,
+          "industry_groups": {
+            "Capital Goods": 0.32
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.32666666666666666,
+          "industry_groups": {
+            "Software & Services": 0.3233333333333333,
+            "Technology Hardware & Equipment": 0.33
+          }
+        }
+      }
+    },
+    "IN": {
+      "level": "country",
+      "code": "IN",
+      "name": "India",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.155,
+          "industry_groups": {
+            "Telecommunication Services": 0.155
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.16666666666666666,
+          "industry_groups": {
+            "Automobiles & Components": 0.16,
+            "Consumer Durables & Apparel": 0.18,
+            "Consumer Services": 0.16
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.11,
+          "industry_groups": {
+            "Household & Personal Products": 0.11
+          }
+        },
+        "Energy": {
+          "sector_u": 0.13599999999999998,
+          "industry_groups": {
+            "Energy": 0.13599999999999998
+          }
+        },
+        "Financials": {
+          "sector_u": 0.16000000000000003,
+          "industry_groups": {
+            "Banks": 0.13,
+            "Financial Services": 0.19000000000000003
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.1325,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.155,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.11
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.1825,
+          "industry_groups": {
+            "Capital Goods": 0.15000000000000002,
+            "Commercial & Professional Services": 0.215
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.15285714285714286,
+          "industry_groups": {
+            "Software & Services": 0.15571428571428572,
+            "Technology Hardware & Equipment": 0.15
+          }
+        },
+        "Materials": {
+          "sector_u": 0.10500000000000001,
+          "industry_groups": {
+            "Materials": 0.10500000000000001
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.16,
+          "industry_groups": {
+            "Real Estate Management & Development": 0.16
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.15666666666666665,
+          "industry_groups": {
+            "Utilities": 0.15666666666666665
+          }
+        }
+      }
+    },
+    "IT": {
+      "level": "country",
+      "code": "IT",
+      "name": "Italy",
+      "benchmarks": {
+        "Consumer Discretionary": {
+          "sector_u": 0.12,
+          "industry_groups": {
+            "Consumer Durables & Apparel": 0.12,
+            "Retailing": 0.12
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.12,
+          "industry_groups": {
+            "Household & Personal Products": 0.12
+          }
+        },
+        "Energy": {
+          "sector_u": 0.17,
+          "industry_groups": {
+            "Energy": 0.17
+          }
+        },
+        "Financials": {
+          "sector_u": 0.17500000000000002,
+          "industry_groups": {
+            "Banks": 0.16,
+            "Financial Services": 0.16,
+            "Insurance": 0.205
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.21,
+          "industry_groups": {
+            "Capital Goods": 0.13,
+            "Commercial & Professional Services": 0.29
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.2125,
+          "industry_groups": {
+            "Software & Services": 0.2125
+          }
+        },
+        "Materials": {
+          "sector_u": 0.12,
+          "industry_groups": {
+            "Materials": 0.12
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.2425,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.29,
+            "Real Estate Management & Development": 0.195
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.18333333333333335,
+          "industry_groups": {
+            "Utilities": 0.18333333333333335
+          }
+        }
+      }
+    },
+    "JP": {
+      "level": "country",
+      "code": "JP",
+      "name": "Japan",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.33,
+          "industry_groups": {
+            "Media & Entertainment": 0.33
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.3408333333333333,
+          "industry_groups": {
+            "Automobiles & Components": 0.3333333333333333,
+            "Consumer Durables & Apparel": 0.33,
+            "Consumer Services": 0.35,
+            "Retailing": 0.35
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.35,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.35
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.33,
+          "industry_groups": {
+            "Capital Goods": 0.33
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.32625000000000004,
+          "industry_groups": {
+            "Software & Services": 0.3225,
+            "Technology Hardware & Equipment": 0.33
+          }
+        }
+      }
+    },
+    "KR": {
+      "level": "country",
+      "code": "KR",
+      "name": "South Korea",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.21,
+          "industry_groups": {
+            "Media & Entertainment": 0.21
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.21,
+          "industry_groups": {
+            "Consumer Services": 0.21,
+            "Retailing": 0.21
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.21,
+          "industry_groups": {
+            "Software & Services": 0.21
+          }
+        }
+      }
+    },
+    "LU": {
+      "level": "country",
+      "code": "LU",
+      "name": "Luxembourg",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.31,
+          "industry_groups": {
+            "Media & Entertainment": 0.31
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.335,
+          "industry_groups": {
+            "Automobiles & Components": 0.4,
+            "Consumer Services": 0.27
+          }
+        },
+        "Energy": {
+          "sector_u": 0.14,
+          "industry_groups": {
+            "Energy": 0.14
+          }
+        },
+        "Financials": {
+          "sector_u": 0.36388888888888893,
+          "industry_groups": {
+            "Banks": 0.3566666666666667,
+            "Financial Services": 0.4,
+            "Insurance": 0.33499999999999996
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.4,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.4
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.3566666666666667,
+          "industry_groups": {
+            "Capital Goods": 0.3566666666666667
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.22125,
+          "industry_groups": {
+            "Software & Services": 0.3025,
+            "Technology Hardware & Equipment": 0.14
+          }
+        },
+        "Materials": {
+          "sector_u": 0.38,
+          "industry_groups": {
+            "Materials": 0.38
+          }
+        }
+      }
+    },
+    "NL": {
+      "level": "country",
+      "code": "NL",
+      "name": "Netherlands",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.26,
+          "industry_groups": {
+            "Media & Entertainment": 0.26
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.2684444444444445,
+          "industry_groups": {
+            "Automobiles & Components": 0.26,
+            "Consumer Services": 0.252,
+            "Retailing": 0.2933333333333334
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.25777777777777783,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.22333333333333336,
+            "Food Beverage & Tobacco": 0.21,
+            "Household & Personal Products": 0.34
+          }
+        },
+        "Energy": {
+          "sector_u": 0.26333333333333336,
+          "industry_groups": {
+            "Energy": 0.26333333333333336
+          }
+        },
+        "Financials": {
+          "sector_u": 0.2544444444444445,
+          "industry_groups": {
+            "Banks": 0.28,
+            "Financial Services": 0.23,
+            "Insurance": 0.25333333333333335
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.24875,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.2525,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.245
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.22361111111111112,
+          "industry_groups": {
+            "Capital Goods": 0.24333333333333332,
+            "Commercial & Professional Services": 0.195,
+            "Transportation": 0.23249999999999998
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.2708333333333333,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.2825,
+            "Software & Services": 0.24250000000000002,
+            "Technology Hardware & Equipment": 0.28750000000000003
+          }
+        },
+        "Materials": {
+          "sector_u": 0.19999999999999998,
+          "industry_groups": {
+            "Materials": 0.19999999999999998
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.21666666666666667,
+          "industry_groups": {
+            "Real Estate Management & Development": 0.21666666666666667
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.315,
+          "industry_groups": {
+            "Utilities": 0.315
+          }
+        }
+      }
+    },
+    "NO": {
+      "level": "country",
+      "code": "NO",
+      "name": "Norway",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.13,
+          "industry_groups": {
+            "Telecommunication Services": 0.13
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.165,
+          "industry_groups": {
+            "Consumer Services": 0.2,
+            "Retailing": 0.13
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.15500000000000003,
+          "industry_groups": {
+            "Food Beverage & Tobacco": 0.17,
+            "Household & Personal Products": 0.14
+          }
+        },
+        "Energy": {
+          "sector_u": 0.17,
+          "industry_groups": {
+            "Energy": 0.17
+          }
+        },
+        "Financials": {
+          "sector_u": 0.13,
+          "industry_groups": {
+            "Banks": 0.13,
+            "Financial Services": 0.13,
+            "Insurance": 0.13
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.17333333333333334,
+          "industry_groups": {
+            "Capital Goods": 0.15666666666666668,
+            "Commercial & Professional Services": 0.19
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.13666666666666666,
+          "industry_groups": {
+            "Software & Services": 0.13333333333333333,
+            "Technology Hardware & Equipment": 0.14
+          }
+        },
+        "Materials": {
+          "sector_u": 0.15285714285714286,
+          "industry_groups": {
+            "Materials": 0.15285714285714286
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.22,
+          "industry_groups": {
+            "Utilities": 0.22
+          }
+        }
+      }
+    },
+    "PA": {
+      "level": "country",
+      "code": "PA",
+      "name": "Panama",
+      "benchmarks": {
+        "Consumer Discretionary": {
+          "sector_u": 0.11,
+          "industry_groups": {
+            "Consumer Services": 0.11,
+            "Retailing": 0.11
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.11,
+          "industry_groups": {
+            "Capital Goods": 0.11,
+            "Commercial & Professional Services": 0.11,
+            "Transportation": 0.11
+          }
+        }
+      }
+    },
+    "PT": {
+      "level": "country",
+      "code": "PT",
+      "name": "Portugal",
+      "benchmarks": {
+        "Consumer Discretionary": {
+          "sector_u": 0.12,
+          "industry_groups": {
+            "Consumer Durables & Apparel": 0.12,
+            "Consumer Services": 0.12,
+            "Retailing": 0.12
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.12,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.12,
+            "Food Beverage & Tobacco": 0.12,
+            "Household & Personal Products": 0.12
+          }
+        },
+        "Energy": {
+          "sector_u": 0.11,
+          "industry_groups": {
+            "Energy": 0.11
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.11,
+          "industry_groups": {
+            "Transportation": 0.11
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.11,
+          "industry_groups": {
+            "Utilities": 0.11
+          }
+        }
+      }
+    },
+    "SE": {
+      "level": "country",
+      "code": "SE",
+      "name": "Sweden",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.33,
+          "industry_groups": {
+            "Telecommunication Services": 0.33
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.1466666666666667,
+          "industry_groups": {
+            "Automobiles & Components": 0.14,
+            "Consumer Services": 0.15,
+            "Retailing": 0.15
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.14,
+          "industry_groups": {
+            "Food Beverage & Tobacco": 0.14
+          }
+        },
+        "Financials": {
+          "sector_u": 0.15,
+          "industry_groups": {
+            "Financial Services": 0.15
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.14,
+          "industry_groups": {
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.14
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.1925,
+          "industry_groups": {
+            "Capital Goods": 0.14500000000000002,
+            "Commercial & Professional Services": 0.24
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.23750000000000002,
+          "industry_groups": {
+            "Software & Services": 0.14500000000000002,
+            "Technology Hardware & Equipment": 0.33
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.33,
+          "industry_groups": {
+            "Real Estate Management & Development": 0.33
+          }
+        }
+      }
+    },
+    "SG": {
+      "level": "country",
+      "code": "SG",
+      "name": "Singapore",
+      "benchmarks": {
+        "Consumer Discretionary": {
+          "sector_u": 0.34,
+          "industry_groups": {
+            "Automobiles & Components": 0.34,
+            "Consumer Durables & Apparel": 0.34
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.34,
+          "industry_groups": {
+            "Capital Goods": 0.34
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.34,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.34,
+            "Software & Services": 0.34,
+            "Technology Hardware & Equipment": 0.34
+          }
+        }
+      }
+    },
+    "US": {
+      "level": "country",
+      "code": "US",
+      "name": "United States",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.24240479115479113,
+          "industry_groups": {
+            "Media & Entertainment": 0.23886363636363636,
+            "Telecommunication Services": 0.24594594594594593
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.2116986243140334,
+          "industry_groups": {
+            "Automobiles & Components": 0.20890243902439024,
+            "Consumer Durables & Apparel": 0.20357142857142857,
+            "Consumer Services": 0.22058823529411764,
+            "Retailing": 0.2137323943661972
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.21981818181818183,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.2278787878787879,
+            "Food Beverage & Tobacco": 0.214,
+            "Household & Personal Products": 0.2175757575757576
+          }
+        },
+        "Energy": {
+          "sector_u": 0.2212037037037037,
+          "industry_groups": {
+            "Energy": 0.2212037037037037
+          }
+        },
+        "Financials": {
+          "sector_u": 0.1976013852031031,
+          "industry_groups": {
+            "Banks": 0.19011363636363637,
+            "Financial Services": 0.20677215189873419,
+            "Insurance": 0.19591836734693877
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.218500212585034,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.22564625850340136,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.21135416666666665
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.22195201366233552,
+          "industry_groups": {
+            "Capital Goods": 0.21887700534759358,
+            "Commercial & Professional Services": 0.2138679245283019,
+            "Transportation": 0.2331111111111111
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.23601376861125703,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.24323529411764705,
+            "Software & Services": 0.2256179775280899,
+            "Technology Hardware & Equipment": 0.2391880341880342
+          }
+        },
+        "Materials": {
+          "sector_u": 0.19710526315789476,
+          "industry_groups": {
+            "Materials": 0.19710526315789476
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.17223809523809525,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.16114285714285714,
+            "Real Estate Management & Development": 0.18333333333333332
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.2165,
+          "industry_groups": {
+            "Utilities": 0.2165
+          }
+        }
+      }
+    }
+  },
+  "regions": {
+    "Europe": {
+      "level": "region",
+      "code": "Europe",
+      "name": "Europe",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.2362121212121212,
+          "industry_groups": {
+            "Media & Entertainment": 0.2290909090909091,
+            "Telecommunication Services": 0.24333333333333332
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.22966349273772022,
+          "industry_groups": {
+            "Automobiles & Components": 0.24444444444444446,
+            "Consumer Durables & Apparel": 0.23186046511627909,
+            "Consumer Services": 0.21753424657534248,
+            "Retailing": 0.22481481481481483
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.21919242772183947,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.21215686274509804,
+            "Food Beverage & Tobacco": 0.21486486486486486,
+            "Household & Personal Products": 0.23055555555555557
+          }
+        },
+        "Energy": {
+          "sector_u": 0.20723076923076925,
+          "industry_groups": {
+            "Energy": 0.20723076923076925
+          }
+        },
+        "Financials": {
+          "sector_u": 0.20948729146894887,
+          "industry_groups": {
+            "Banks": 0.21183098591549296,
+            "Financial Services": 0.20534883720930233,
+            "Insurance": 0.2112820512820513
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.23249999999999998,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.24192307692307694,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.22307692307692306
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.23278136325024754,
+          "industry_groups": {
+            "Capital Goods": 0.24351063829787234,
+            "Commercial & Professional Services": 0.22542168674698795,
+            "Transportation": 0.22941176470588234
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.25703239289446184,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.28454545454545455,
+            "Software & Services": 0.23655172413793105,
+            "Technology Hardware & Equipment": 0.25
+          }
+        },
+        "Materials": {
+          "sector_u": 0.21489795918367346,
+          "industry_groups": {
+            "Materials": 0.21489795918367346
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.1847480620155039,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.17833333333333334,
+            "Real Estate Management & Development": 0.19116279069767445
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.20479166666666668,
+          "industry_groups": {
+            "Utilities": 0.20479166666666668
+          }
+        }
+      }
+    },
+    "North America": {
+      "level": "region",
+      "code": "North America",
+      "name": "North America",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.24193593593593593,
+          "industry_groups": {
+            "Media & Entertainment": 0.2379259259259259,
+            "Telecommunication Services": 0.24594594594594593
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.2086541800849655,
+          "industry_groups": {
+            "Automobiles & Components": 0.2055056179775281,
+            "Consumer Durables & Apparel": 0.2013793103448276,
+            "Consumer Services": 0.21664335664335665,
+            "Retailing": 0.21108843537414967
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.21943072516206844,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.22671641791044775,
+            "Food Beverage & Tobacco": 0.214,
+            "Household & Personal Products": 0.2175757575757576
+          }
+        },
+        "Energy": {
+          "sector_u": 0.21000000000000002,
+          "industry_groups": {
+            "Energy": 0.21000000000000002
+          }
+        },
+        "Financials": {
+          "sector_u": 0.1911597708199738,
+          "industry_groups": {
+            "Banks": 0.18480769230769228,
+            "Financial Services": 0.20286516853932585,
+            "Insurance": 0.1858064516129032
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.219137104506232,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.2268456375838926,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.2114285714285714
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.21309816549570648,
+          "industry_groups": {
+            "Capital Goods": 0.2114285714285714,
+            "Commercial & Professional Services": 0.2109016393442623,
+            "Transportation": 0.21696428571428572
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.2349770521316349,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.24323529411764705,
+            "Software & Services": 0.22241014799154335,
+            "Technology Hardware & Equipment": 0.2392857142857143
+          }
+        },
+        "Materials": {
+          "sector_u": 0.1876635514018692,
+          "industry_groups": {
+            "Materials": 0.1876635514018692
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.17195599445599447,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.16512820512820514,
+            "Real Estate Management & Development": 0.1787837837837838
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.2087142857142857,
+          "industry_groups": {
+            "Utilities": 0.2087142857142857
+          }
+        }
+      }
+    },
+    "Asia": {
+      "level": "region",
+      "code": "Asia",
+      "name": "Asia",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.21666666666666667,
+          "industry_groups": {
+            "Media & Entertainment": 0.25333333333333335,
+            "Telecommunication Services": 0.18000000000000002
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.24661931818181818,
+          "industry_groups": {
+            "Automobiles & Components": 0.23272727272727273,
+            "Consumer Durables & Apparel": 0.27125,
+            "Consumer Services": 0.2275,
+            "Retailing": 0.255
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.2225555555555556,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.27666666666666667,
+            "Food Beverage & Tobacco": 0.255,
+            "Household & Personal Products": 0.13599999999999998
+          }
+        },
+        "Energy": {
+          "sector_u": 0.17125,
+          "industry_groups": {
+            "Energy": 0.17125
+          }
+        },
+        "Financials": {
+          "sector_u": 0.1866190476190476,
+          "industry_groups": {
+            "Banks": 0.162,
+            "Financial Services": 0.21357142857142858,
+            "Insurance": 0.1842857142857143
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.20833333333333331,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.21,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.20666666666666667
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.17549707602339182,
+          "industry_groups": {
+            "Capital Goods": 0.2131578947368421,
+            "Commercial & Professional Services": 0.16,
+            "Transportation": 0.15333333333333332
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.2698214285714286,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.34,
+            "Software & Services": 0.22821428571428573,
+            "Technology Hardware & Equipment": 0.24125
+          }
+        },
+        "Materials": {
+          "sector_u": 0.19,
+          "industry_groups": {
+            "Materials": 0.19
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.19742424242424245,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.21666666666666667,
+            "Real Estate Management & Development": 0.1781818181818182
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.16444444444444445,
+          "industry_groups": {
+            "Utilities": 0.16444444444444445
+          }
+        }
+      }
+    },
+    "Oceania": {
+      "level": "region",
+      "code": "Oceania",
+      "name": "Oceania",
+      "benchmarks": {
+        "Energy": {
+          "sector_u": 0.09,
+          "industry_groups": {
+            "Energy": 0.09
+          }
+        },
+        "Materials": {
+          "sector_u": 0.09,
+          "industry_groups": {
+            "Materials": 0.09
+          }
+        }
+      }
+    },
+    "World": {
+      "level": "region",
+      "code": "World",
+      "name": "World",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.23733311229000886,
+          "industry_groups": {
+            "Media & Entertainment": 0.2367816091954023,
+            "Telecommunication Services": 0.23788461538461542
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.21923338373113585,
+          "industry_groups": {
+            "Automobiles & Components": 0.22458563535911602,
+            "Consumer Durables & Apparel": 0.21853211009174311,
+            "Consumer Services": 0.21750000000000003,
+            "Retailing": 0.2163157894736842
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.21857903357903355,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.2218181818181818,
+            "Food Beverage & Tobacco": 0.21554054054054053,
+            "Household & Personal Products": 0.21837837837837837
+          }
+        },
+        "Energy": {
+          "sector_u": 0.2058371040723982,
+          "industry_groups": {
+            "Energy": 0.2058371040723982
+          }
+        },
+        "Financials": {
+          "sector_u": 0.19767533840795234,
+          "industry_groups": {
+            "Banks": 0.19394594594594597,
+            "Financial Services": 0.2041726618705036,
+            "Insurance": 0.19490740740740742
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.22271952259164535,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.2301449275362319,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.2152941176470588
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.2200271586456414,
+          "industry_groups": {
+            "Capital Goods": 0.22597122302158273,
+            "Commercial & Professional Services": 0.21464788732394366,
+            "Transportation": 0.21946236559139784
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.24113709265402997,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.25521739130434784,
+            "Software & Services": 0.2262962962962963,
+            "Technology Hardware & Equipment": 0.24189759036144579
+          }
+        },
+        "Materials": {
+          "sector_u": 0.19967592592592595,
+          "industry_groups": {
+            "Materials": 0.19967592592592595
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.17690827546296295,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.17092592592592593,
+            "Real Estate Management & Development": 0.182890625
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.20409448818897638,
+          "industry_groups": {
+            "Utilities": 0.20409448818897638
+          }
+        }
+      }
+    }
+  },
+  "markets": {
+    "Developed": {
+      "level": "market",
+      "code": "Developed",
+      "name": "Developed",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.2416355199593186,
+          "industry_groups": {
+            "Media & Entertainment": 0.23783625730994154,
+            "Telecommunication Services": 0.24543478260869567
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.22001028466899095,
+          "industry_groups": {
+            "Automobiles & Components": 0.22660919540229885,
+            "Consumer Durables & Apparel": 0.21885714285714286,
+            "Consumer Services": 0.2186046511627907,
+            "Retailing": 0.21597014925373137
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.22010162519113927,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.2215126050420168,
+            "Food Beverage & Tobacco": 0.21444444444444444,
+            "Household & Personal Products": 0.22434782608695653
+          }
+        },
+        "Energy": {
+          "sector_u": 0.20853658536585365,
+          "industry_groups": {
+            "Energy": 0.20853658536585365
+          }
+        },
+        "Financials": {
+          "sector_u": 0.2003470916335185,
+          "industry_groups": {
+            "Banks": 0.19720238095238096,
+            "Financial Services": 0.20490272373540858,
+            "Insurance": 0.19893617021276594
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.22310646766169157,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.23074626865671644,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.21546666666666667
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.22452903698561455,
+          "industry_groups": {
+            "Capital Goods": 0.2288,
+            "Commercial & Professional Services": 0.2181592039800995,
+            "Transportation": 0.2266279069767442
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.24206198806830484,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.25521739130434784,
+            "Software & Services": 0.2276352395672334,
+            "Technology Hardware & Equipment": 0.24333333333333332
+          }
+        },
+        "Materials": {
+          "sector_u": 0.20058536585365852,
+          "industry_groups": {
+            "Materials": 0.20058536585365852
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.17524453024453024,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.1657142857142857,
+            "Real Estate Management & Development": 0.1847747747747748
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.20711864406779662,
+          "industry_groups": {
+            "Utilities": 0.20711864406779662
+          }
+        }
+      }
+    },
+    "Emerging": {
+      "level": "market",
+      "code": "Emerging",
+      "name": "Emerging",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.17833333333333334,
+          "industry_groups": {
+            "Media & Entertainment": 0.17666666666666667,
+            "Telecommunication Services": 0.18000000000000002
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.20212912087912085,
+          "industry_groups": {
+            "Automobiles & Components": 0.1742857142857143,
+            "Consumer Durables & Apparel": 0.21,
+            "Consumer Services": 0.1992307692307692,
+            "Retailing": 0.225
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.21033333333333334,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.24,
+            "Food Beverage & Tobacco": 0.255,
+            "Household & Personal Products": 0.13599999999999998
+          }
+        },
+        "Energy": {
+          "sector_u": 0.17125,
+          "industry_groups": {
+            "Energy": 0.17125
+          }
+        },
+        "Financials": {
+          "sector_u": 0.17495331465919697,
+          "industry_groups": {
+            "Banks": 0.16176470588235295,
+            "Financial Services": 0.1952380952380952,
+            "Insurance": 0.16785714285714287
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.20833333333333331,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.21,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.20666666666666667
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.14889122315592906,
+          "industry_groups": {
+            "Capital Goods": 0.15941176470588236,
+            "Commercial & Professional Services": 0.15583333333333335,
+            "Transportation": 0.13142857142857142
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.19767857142857143,
+          "industry_groups": {
+            "Software & Services": 0.19535714285714284,
+            "Technology Hardware & Equipment": 0.2
+          }
+        },
+        "Materials": {
+          "sector_u": 0.1827272727272727,
+          "industry_groups": {
+            "Materials": 0.1827272727272727
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.19629411764705884,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.22200000000000003,
+            "Real Estate Management & Development": 0.17058823529411765
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.16444444444444445,
+          "industry_groups": {
+            "Utilities": 0.16444444444444445
+          }
+        }
+      }
+    },
+    "Investable Universe": {
+      "level": "market",
+      "code": "Investable Universe",
+      "name": "Investable Universe",
+      "benchmarks": {
+        "Communication Services": {
+          "sector_u": 0.23733311229000886,
+          "industry_groups": {
+            "Media & Entertainment": 0.2367816091954023,
+            "Telecommunication Services": 0.23788461538461542
+          }
+        },
+        "Consumer Discretionary": {
+          "sector_u": 0.21923338373113585,
+          "industry_groups": {
+            "Automobiles & Components": 0.22458563535911602,
+            "Consumer Durables & Apparel": 0.21853211009174311,
+            "Consumer Services": 0.21750000000000003,
+            "Retailing": 0.2163157894736842
+          }
+        },
+        "Consumer Staples": {
+          "sector_u": 0.21857903357903355,
+          "industry_groups": {
+            "Food & Staples Retailing": 0.2218181818181818,
+            "Food Beverage & Tobacco": 0.21554054054054053,
+            "Household & Personal Products": 0.21837837837837837
+          }
+        },
+        "Energy": {
+          "sector_u": 0.2058371040723982,
+          "industry_groups": {
+            "Energy": 0.2058371040723982
+          }
+        },
+        "Financials": {
+          "sector_u": 0.19767533840795234,
+          "industry_groups": {
+            "Banks": 0.19394594594594597,
+            "Financial Services": 0.2041726618705036,
+            "Insurance": 0.19490740740740742
+          }
+        },
+        "Health Care": {
+          "sector_u": 0.22271952259164535,
+          "industry_groups": {
+            "Health Care Equipment & Services": 0.2301449275362319,
+            "Pharmaceuticals, Biotechnology & Life Sciences": 0.2152941176470588
+          }
+        },
+        "Industrials": {
+          "sector_u": 0.2200271586456414,
+          "industry_groups": {
+            "Capital Goods": 0.22597122302158273,
+            "Commercial & Professional Services": 0.21464788732394366,
+            "Transportation": 0.21946236559139784
+          }
+        },
+        "Information Technology": {
+          "sector_u": 0.24113709265402997,
+          "industry_groups": {
+            "Semiconductors & Semiconductor Equipment": 0.25521739130434784,
+            "Software & Services": 0.2262962962962963,
+            "Technology Hardware & Equipment": 0.24189759036144579
+          }
+        },
+        "Materials": {
+          "sector_u": 0.19967592592592595,
+          "industry_groups": {
+            "Materials": 0.19967592592592595
+          }
+        },
+        "Real Estate": {
+          "sector_u": 0.17690827546296295,
+          "industry_groups": {
+            "Equity Real Estate Investment Trusts (REITs)": 0.17092592592592593,
+            "Real Estate Management & Development": 0.182890625
+          }
+        },
+        "Utilities": {
+          "sector_u": 0.20409448818897638,
+          "industry_groups": {
+            "Utilities": 0.20409448818897638
+          }
+        }
+      }
+    }
+  }
+}

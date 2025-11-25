@@ -258,7 +258,7 @@ const SimilarStocks: React.FC = () => {
   const xs = layoutNodes.map((n) => n.x);
   const ys = layoutNodes.map((n) => n.y);
   const labels = layoutNodes.map((n) => n.label);
-  const colors = layoutNodes.map((n) => (n.isFocal ? "red" : "yellow"));
+  const colors = layoutNodes.map((n) => (n.isFocal ? "rgba(66, 133, 244, 1)" : "yellow"));
 
   const edgeTraces = layoutEdges
     .map((e) => {

@@ -439,6 +439,61 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
     [allSectorNames]
   );
 
+  const filteredSectorData = useMemo(() => {
+    if (!selectedStock) return { sectors: [], stockWeights: [], benchWeights: [], positions: [] };
+    
+    const tempData: Array<{ sector: string; stockWeight: number; benchWeight: number }> = [];
+    
+    allSectorNames.forEach((sector) => {
+      const stockWeight = selectedStock.sectors[sector] || 0;
+      
+      // Only include sectors where the stock has non-zero weight
+      if (stockWeight > 0) {
+        let benchWeight = 0;
+        
+        if (!combinedStocks.length) {
+          benchWeight = 0;
+        } else if (
+          !currentBenchmark ||
+          currentBenchmark.level === "universe" ||
+          !currentBenchmark.ref
+        ) {
+          benchWeight = mean(
+            combinedStocks.map((s) =>
+              s.sectors[sector] != null ? Number(s.sectors[sector]) : 0
+            )
+          );
+        } else {
+          const benchStruct = currentBenchmark.ref.benchmarks;
+          const entry = benchStruct[sector];
+          if (entry) {
+            const [sectorWeightFraction] = entry;
+            benchWeight = sectorWeightFraction * 100;
+          }
+        }
+        
+        tempData.push({ sector, stockWeight, benchWeight });
+      }
+    });
+    
+    // Sort by stock weight in descending order
+    tempData.sort((a, b) => b.stockWeight - a.stockWeight);
+    
+    const sectors: string[] = [];
+    const stockWeights: number[] = [];
+    const benchWeights: number[] = [];
+    const positions: number[] = [];
+    
+    tempData.forEach((item, idx) => {
+      sectors.push(item.sector);
+      stockWeights.push(item.stockWeight);
+      benchWeights.push(item.benchWeight);
+      positions.push(idx + 1);
+    });
+    
+    return { sectors, stockWeights, benchWeights, positions };
+  }, [allSectorNames, selectedStock, combinedStocks, currentBenchmark]);
+
   const distStockWeights = useMemo(() => {
     if (!selectedStock) return allSectorNames.map(() => 0);
     return allSectorNames.map((sector) => selectedStock.sectors[sector] || 0);
@@ -496,13 +551,13 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
     }
 
     const map: Record<string, number[]> = {};
-    allSectorNames.forEach((sector) => {
+    filteredSectorData.sectors.forEach((sector) => {
       map[sector] = sampleStocks
         .map((s) => s.sectors[sector] || 0)
         .filter((v) => !Number.isNaN(v));
     });
     return map;
-  }, [allSectorNames, combinedStocks, currentBenchmark]);
+  }, [filteredSectorData.sectors, combinedStocks, currentBenchmark]);
 
   const igStockWeights = useMemo(() => {
     if (!selectedStock) return allIGNames.map(() => 0);
@@ -570,7 +625,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
         >
           <Paper
             variant="outlined"
-            sx={{ p: 1.5, height: "100%", overflow: "hidden" }}
+            sx={{ p: 1.5, height: "fit-content", overflow: "hidden" }}
           >
             <Typography
               variant="subtitle2"
@@ -673,12 +728,12 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
             sx={{
               display: "flex",
               flexDirection: "column",
-              gap: 2,
+              gap: 0.5,
               height: "100%",
               pt: 0,
             }}
           >
-            <Box sx={{ flex: "0 0 50%", minHeight: 0 }}>
+            <Box sx={{ flex: "0 0 auto", minHeight: 0 }}>
               <Box
                 sx={{
                   display: "grid",
@@ -832,13 +887,13 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
               </Box>
             </Box>
 
-            <Box sx={{ flex: "1 0 auto", minHeight: 0, mt: -1 }}>
+            <Box sx={{ flex: "1 0 auto", minHeight: 0, mt: 0 }}>
               <Box
                 sx={{
                   display: "grid",
                   gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
                   gap: 2,
-                  mb: 1,
+                  mb: 0.5,
                   maxWidth: 420,
                 }}
               >
@@ -894,7 +949,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                 layout={
                   {
                     height: 200,
-                    margin: { l: 60, r: 20, t: 10, b: 40 },
+                    margin: { l: 60, r: 20, t: 5, b: 40 },
                     xaxis: {
                       title: {
                         text: scatterSector || "Sector weight (%)",
@@ -924,9 +979,10 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          gridTemplateColumns: { xs: "1fr", md: "2fr 2fr 1.5fr 1.5fr" },
           gap: 2,
           mb: 1.5,
+          alignItems: "center",
         }}
       >
         <FormControl fullWidth size="small">
@@ -958,19 +1014,9 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
             ))}
           </Select>
         </FormControl>
-      </Box>
 
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          gap: 2,
-          mb: 1.5,
-          alignItems: "center",
-        }}
-      >
         <Box>
-          <Typography variant="caption" sx={{ mr: 1 }}>
+          <Typography variant="caption" sx={{ mb: 0.5, display: "block" }}>
             Display Industry Groups
           </Typography>
           <ToggleButtonGroup
@@ -985,7 +1031,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
         </Box>
 
         <Box>
-          <Typography variant="caption" sx={{ mr: 1 }}>
+          <Typography variant="caption" sx={{ mb: 0.5, display: "block" }}>
             Display Weight Distributions
           </Typography>
           <ToggleButtonGroup
@@ -1009,21 +1055,36 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
               const traces: any[] = [];
 
               traces.push({
-                x: sectorPositions,
-                y: distStockWeights,
+                x: filteredSectorData.positions,
+                y: filteredSectorData.stockWeights,
                 type: "bar",
                 name: selectedStock?.name ?? "Selected stock",
-                marker: { opacity: 0.25 },
+                marker: { color: "rgba(66, 133, 244, 0.8)" },
                 offsetgroup: "stock",
+                width: 0.3,
               });
 
-              const curveWidth = 0.35;
+              // Add stacked remainder bars to reach 100%
+              const remainderWeights = filteredSectorData.stockWeights.map(w => 100 - w);
+              traces.push({
+                x: filteredSectorData.positions,
+                y: remainderWeights,
+                type: "bar",
+                name: "Remainder",
+                marker: { color: "lightgray", opacity: 0.3 },
+                offsetgroup: "stock",
+                width: 0.3,
+                showlegend: false,
+                hovertemplate: "Remainder: %{y:.1f}%<extra></extra>",
+              });
 
-              allSectorNames.forEach((sector, idx) => {
+              const curveWidth = 0.3;
+
+              filteredSectorData.sectors.forEach((sector, idx) => {
                 const samples = distSamplesBenchBySector[sector] ?? [];
                 if (!samples.length) return;
 
-                const xCenter = sectorPositions[idx];
+                const xCenter = filteredSectorData.positions[idx];
 
                 const steps = 80;
                 const bandwidth = 8;
@@ -1049,7 +1110,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
 
                 densities.forEach((d, i) => {
                   const bow = (d / maxD) * curveWidth;
-                  curveX.push(xCenter + bow);
+                  curveX.push(xCenter - 0.15 + bow);
                   curveY.push(ys[i]);
                 });
 
@@ -1063,7 +1124,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                     width: 2,
                     shape: "spline",
                     smoothing: 1.3,
-                    color: "#3f4386ff",
+                    color: "darkblue",
                   },
                   hovertemplate: `${
                     currentBenchmark?.label ?? "Benchmark"
@@ -1077,35 +1138,35 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
           }
           layout={
             {
-              barmode: "overlay",
+              barmode: "stack",
               height: 260,
               margin: { l: 60, r: 20, t: 10, b: 40 },
               yaxis: { title: { text: "Weight (%)" }, range: [0, 100] },
               xaxis: {
                 title: { text: "" },
                 tickmode: "array",
-                tickvals: sectorPositions,
-                ticktext: allSectorNames,
+                tickvals: filteredSectorData.positions,
+                ticktext: filteredSectorData.sectors,
               },
-              shapes: allSectorNames.map((sector, idx) => {
+              shapes: filteredSectorData.sectors.map((sector, idx) => {
                 const samples = distSamplesBenchBySector[sector] ?? [];
                 const med = median(samples);
-                const xCenter = sectorPositions[idx];
+                const xCenter = filteredSectorData.positions[idx];
                 return {
                   type: "line",
                   xref: "x",
                   yref: "y",
-                  x0: xCenter - 0.4,
-                  x1: xCenter + 0.4,
+                  x0: xCenter - 0.15,
+                  x1: xCenter + 0.15,
                   y0: med,
                   y1: med,
                   line: {
-                    width: 2,
+                    width: 4,
                     color: "red",
                   },
                 };
               }),
-              showlegend: true,
+              showlegend: false,
             } as any
           }
           config={{ displayModeBar: false, responsive: true } as any}
@@ -1114,21 +1175,50 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
       ) : showIndustryGroups ? (
         <Plot
           data={
-            [
-              {
-                x: allIGNames,
-                y: igStockWeights,
-                type: "bar",
-                name: selectedStock?.name ?? "Selected stock",
-              },
-              {
-                x: allIGNames,
-                y: igBenchWeights,
-                type: "bar",
-                name: currentBenchmark?.label ?? "Benchmark",
-                opacity: 0.5,
-              },
-            ] as any
+            (() => {
+              const tempData: Array<{ ig: string; stockWeight: number; benchWeight: number }> = [];
+              
+              allIGNames.forEach((ig, idx) => {
+                const stockW = igStockWeights[idx];
+                // Only include industry groups where the stock has non-zero weight
+                if (stockW > 0) {
+                  const benchW = igBenchWeights[idx];
+                  tempData.push({ ig, stockWeight: stockW, benchWeight: benchW });
+                }
+              });
+              
+              // Sort by stock weight in descending order
+              tempData.sort((a, b) => b.stockWeight - a.stockWeight);
+              
+              const filteredIGs: string[] = [];
+              const filteredStockWeights: number[] = [];
+              const filteredBenchWeights: number[] = [];
+              
+              tempData.forEach(item => {
+                filteredIGs.push(item.ig);
+                filteredStockWeights.push(item.stockWeight);
+                filteredBenchWeights.push(item.benchWeight);
+              });
+              
+              return [
+                {
+                  x: filteredIGs,
+                  y: filteredStockWeights,
+                  type: "bar",
+                  name: selectedStock?.name ?? "Selected stock",
+                  marker: { color: "rgba(66, 133, 244, 0.8)" },
+                  width: 0.3,
+                },
+                {
+                  x: filteredIGs,
+                  y: filteredBenchWeights,
+                  type: "bar",
+                  name: currentBenchmark?.label ?? "Benchmark",
+                  opacity: 0.5,
+                  width: 0.3,
+                },
+              ] as any;
+            })()
           }
           layout={
             {
@@ -1151,19 +1241,22 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
           data={
             [
               {
-                x: sectorPositions,
-                y: distStockWeights,
+                x: filteredSectorData.positions,
+                y: filteredSectorData.stockWeights,
                 type: "bar",
                 name: selectedStock?.name ?? "Selected stock",
+                marker: { color: "rgba(66, 133, 244, 0.8)" },
                 offsetgroup: "stock",
+                width: 0.3,
               },
               {
-                x: sectorPositions,
-                y: distBenchWeights,
+                x: filteredSectorData.positions,
+                y: filteredSectorData.benchWeights,
                 type: "bar",
                 name: currentBenchmark?.label ?? "Benchmark",
                 offsetgroup: "bench",
                 opacity: 0.4,
+                width: 0.3,
               },
             ] as any
           }
@@ -1176,8 +1269,8 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
               xaxis: {
                 title: { text: "" },
                 tickmode: "array",
-                tickvals: sectorPositions,
-                ticktext: allSectorNames,
+                tickvals: filteredSectorData.positions,
+                ticktext: filteredSectorData.sectors,
               },
               showlegend: true,
             } as any

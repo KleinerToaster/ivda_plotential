@@ -70,6 +70,7 @@ const WeightDifferenceView: React.FC = () => {
 
   const baselineOptions: BaselineOption[] = useMemo(() => {
     const opts: BaselineOption[] = [
+      { id: "none", label: "None (Portfolio 1 vs Portfolio 2)", level: "universe" },
       { id: "universe", label: "Universe average", level: "universe" },
     ];
 
@@ -103,7 +104,7 @@ const WeightDifferenceView: React.FC = () => {
     return opts;
   }, []);
 
-  const [baselineId, setBaselineId] = useState<string>("universe");
+  const [baselineId, setBaselineId] = useState<string>("none");
 
   const currentBaseline = useMemo(
     () =>
@@ -258,12 +259,14 @@ const WeightDifferenceView: React.FC = () => {
     [categoriesList, baselineWeightsAllMap]
   );
 
+  const isBaselineNone = baselineId === "none";
+
   const diffP1 = useMemo(
     () =>
-      portfolio1Weights.map(
-        (w, i) => w - (baselineWeights[i] ?? 0)
-      ),
-    [portfolio1Weights, baselineWeights]
+      isBaselineNone
+        ? portfolio1Weights.map((w, i) => w - (portfolio2Weights[i] ?? 0))
+        : portfolio1Weights.map((w, i) => w - (baselineWeights[i] ?? 0)),
+    [portfolio1Weights, portfolio2Weights, baselineWeights, isBaselineNone]
   );
 
   const diffP2 = useMemo(
@@ -294,33 +297,47 @@ const WeightDifferenceView: React.FC = () => {
 
   const baselineLabel = currentBaseline?.label ?? "Baseline";
 
-  const data = [
-    {
-      type: "bar" as const,
-      orientation: "h" as const,
-      x: diffP1,
-      y: categoriesList,
-      name: portfolio1Stock.name,
-      marker: { color: "rgba(66, 133, 244, 0.8)" },
-      hovertemplate:
-        "<b>%{y}</b><br>" +
-        `${portfolio1Stock.name} vs ${baselineLabel}: %{x:.2f}%<extra></extra>`,
-    },
-    {
-      type: "bar" as const,
-      orientation: "h" as const,
-      x: diffP2,
-      y: categoriesList,
-      name: portfolio2Label,
-      marker: {
-        color: "rgba(219, 68, 55, 0.1)",
-        line: { color: "rgba(219, 68, 55, 1)", width: 2 },
-      },
-      hovertemplate:
-        "<b>%{y}</b><br>" +
-        `${portfolio2Label} vs ${baselineLabel}: %{x:.2f}%<extra></extra>`,
-    },
-  ];
+  const data = isBaselineNone
+    ? [
+        {
+          type: "bar" as const,
+          orientation: "h" as const,
+          x: diffP1,
+          y: categoriesList,
+          name: `${portfolio1Stock.name} - ${portfolio2Label}`,
+          marker: { color: "rgba(66, 133, 244, 0.8)" },
+          hovertemplate:
+            "<b>%{y}</b><br>" +
+            `${portfolio1Stock.name} - ${portfolio2Label}: %{x:.2f}%<extra></extra>`,
+        },
+      ]
+    : [
+        {
+          type: "bar" as const,
+          orientation: "h" as const,
+          x: diffP1,
+          y: categoriesList,
+          name: portfolio1Stock.name,
+          marker: { color: "rgba(66, 133, 244, 0.8)" },
+          hovertemplate:
+            "<b>%{y}</b><br>" +
+            `${portfolio1Stock.name} vs ${baselineLabel}: %{x:.2f}%<extra></extra>`,
+        },
+        {
+          type: "bar" as const,
+          orientation: "h" as const,
+          x: diffP2,
+          y: categoriesList,
+          name: portfolio2Label,
+          marker: {
+            color: "rgba(219, 68, 55, 0.1)",
+            line: { color: "rgba(219, 68, 55, 1)", width: 2 },
+          },
+          hovertemplate:
+            "<b>%{y}</b><br>" +
+            `${portfolio2Label} vs ${baselineLabel}: %{x:.2f}%<extra></extra>`,
+        },
+      ];
 
   const layout = {
     barmode: "overlay" as const,

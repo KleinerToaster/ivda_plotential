@@ -351,7 +351,7 @@ const WeightDifferenceView: React.FC = () => {
       zerolinewidth: 2,
     },
     yaxis: { autorange: "reversed" as const },
-    showlegend: true,
+    showlegend: false,
   };
 
   return (

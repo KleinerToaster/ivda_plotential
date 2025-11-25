@@ -189,6 +189,7 @@ const SimilarStocks: React.FC = () => {
 
   const [focal, setFocal] = useState<string>(() => stocks[0]?.isin ?? "");
   const [k, setK] = useState<number>(10);
+  const [numPeers, setNumPeers] = useState<number>(5);
 
   const focalStock =
     stocks.find((s) => s.isin === focal) ?? stocks[0];
@@ -224,7 +225,10 @@ const SimilarStocks: React.FC = () => {
       y: 0,
     });
 
-    nbrs.forEach((n) => {
+    // Only include up to numPeers neighbors
+    const peersToShow = nbrs.slice(0, numPeers);
+    
+    peersToShow.forEach((n) => {
       nodes.push({
         id: n.stock.isin,
         label: `${n.stock.isin}\n${n.stock.name}`,
@@ -249,7 +253,7 @@ const SimilarStocks: React.FC = () => {
 
     const laidOut = runLayout(nodes, edges, 250);
     return { layoutNodes: laidOut, layoutEdges: edges };
-  }, [focalStock, nbrs, vecs]);
+  }, [focalStock, nbrs, vecs, numPeers]);
 
   const xs = layoutNodes.map((n) => n.x);
   const ys = layoutNodes.map((n) => n.y);
@@ -304,7 +308,7 @@ const SimilarStocks: React.FC = () => {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "2fr 1fr" },
+          gridTemplateColumns: { xs: "1fr", sm: "1.5fr 1fr 1fr" },
           gap: 1.5,
           mb: 1.5,
         }}
@@ -336,6 +340,20 @@ const SimilarStocks: React.FC = () => {
             }
           }}
           inputProps={{ min: 1, max: 30 }}
+        />
+
+        <TextField
+          size="small"
+          label="Number of peers"
+          type="number"
+          value={numPeers}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            if (!Number.isNaN(val) && val > 0) {
+              setNumPeers(val);
+            }
+          }}
+          inputProps={{ min: 1, max: k }}
         />
       </Box>
 

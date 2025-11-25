@@ -14,7 +14,11 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Collapse,
+  ListItemButton,
 } from "@mui/material";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import Plot from "react-plotly.js";
 import rawStockData from "../stock_data.json";
 import rawAllBenchmarks from "../all_benchmarks.json";
@@ -379,6 +383,20 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
 
   const subsetWeights = subsetStocks.map((s) => s.percentage);
 
+  const [expandedSectors, setExpandedSectors] = useState<Set<string>>(new Set());
+
+  const handleToggleSector = (sector: string) => {
+    setExpandedSectors((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(sector)) {
+        newSet.delete(sector);
+      } else {
+        newSet.add(sector);
+      }
+      return newSet;
+    });
+  };
+
   const [scatterSector, setScatterSector] = useState<string>(
     () => allSectorNames[0] ?? ""
   );
@@ -413,6 +431,9 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
   const [distStockIsin, setDistStockIsin] = useState<string>(
     combinedStocks[0]?.isin ?? ""
   );
+  const [comparisonStockIsin, setComparisonStockIsin] = useState<string>(
+    combinedStocks[1]?.isin ?? combinedStocks[0]?.isin ?? ""
+  );
 
   const [distBenchmarkId, setDistBenchmarkId] = useState<string>("universe");
   const [showIndustryGroups, setShowIndustryGroups] = useState<boolean>(true);
@@ -432,6 +453,15 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
       combinedStocks[0] ||
       null,
     [combinedStocks, distStockIsin]
+  );
+
+  const comparisonStock = useMemo(
+    () =>
+      combinedStocks.find((s) => s.isin === comparisonStockIsin) ||
+      combinedStocks[1] ||
+      combinedStocks[0] ||
+      null,
+    [combinedStocks, comparisonStockIsin]
   );
 
   const sectorPositions = useMemo(
@@ -620,7 +650,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
             gridTemplateColumns: { xs: "1fr", md: "260px minmax(0, 1fr)" },
             gap: 2,
             alignItems: "stretch",
-            minHeight: 420,
+            minHeight: 380,
           }}
         >
           <Paper
@@ -634,94 +664,67 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
               Drill-Down from Sectors to Stocks
             </Typography>
 
-            <Box
+            <List
+              dense
+              disablePadding
               sx={{
-                display: "grid",
-                gridTemplateColumns: "1fr 24px 1fr",
-                columnGap: 1,
-                alignItems: "stretch",
+                maxHeight: 450,
+                overflow: "auto",
+                border: "1px solid #e0e0e0",
+                borderRadius: 1,
               }}
             >
-              <Typography
-                variant="caption"
-                sx={{ gridColumn: "1", fontWeight: 600, mb: 1 }}
-              >
-                Sector
-              </Typography>
-              <Box />
-              <Typography
-                variant="caption"
-                sx={{ gridColumn: "3", fontWeight: 600, mb: 1 }}
-              >
-                Industry Group
-              </Typography>
-
-              {sectorIGMapping.map((row) => (
+              {sectorIGMapping.map((row, idx) => (
                 <React.Fragment key={row.sector}>
-                  <Box
-                    sx={{
-                      py: 0.5,
-                      borderBottom: "1px solid #eee",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Typography variant="body2">{row.sector}</Typography>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      borderBottom: "1px solid #eee",
-                      display: "flex",
-                      justifyContent: "center",
-                      px: 0.5,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: "100%",
-                        backgroundColor: "#e5e7eb",
-                        borderRadius: 0.5,
-                        height: 6,
+                  {idx > 0 && <Divider />}
+                  <ListItemButton onClick={() => handleToggleSector(row.sector)}>
+                    <ListItemText
+                      primary={row.sector}
+                      primaryTypographyProps={{
+                        variant: "body2",
+                        fontWeight: 500,
                       }}
                     />
-                  </Box>
-
-                  <Box
-                    sx={{
-                      py: 0.5,
-                      borderBottom: "1px solid #eee",
-                      overflowX: "auto",
-                      whiteSpace: "nowrap",
-                      "&::-webkit-scrollbar": {
-                        height: 6,
-                      },
-                    }}
+                    {expandedSectors.has(row.sector) ? (
+                      <ExpandLess />
+                    ) : (
+                      <ExpandMore />
+                    )}
+                  </ListItemButton>
+                  <Collapse
+                    in={expandedSectors.has(row.sector)}
+                    timeout="auto"
+                    unmountOnExit
                   >
-                    {row.groups.map((g) => (
-                      <Box
-                        key={g}
-                        sx={{
-                          border: "1px solid #111827",
-                          borderRadius: 0.5,
-                          px: 0.5,
-                          py: 0.1,
-                          mr: 0.5,
-                          display: "inline-block",
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{ fontFamily: "monospace" }}
+                    <List component="div" disablePadding dense>
+                      {row.groups.map((group) => (
+                        <ListItemButton
+                          key={group}
+                          onClick={() => setSubset(group)}
+                          sx={{
+                            pl: 4,
+                            py: 0.5,
+                            bgcolor: subset === group ? "#e3f2fd" : "#f9f9f9",
+                            "&:hover": {
+                              bgcolor: subset === group ? "#bbdefb" : "#eeeeee",
+                            },
+                          }}
                         >
-                          {g}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
+                          <ListItemText
+                            primary={group}
+                            primaryTypographyProps={{
+                              variant: "body2",
+                              fontSize: "0.85rem",
+                              fontWeight: subset === group ? 600 : 400,
+                            }}
+                          />
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  </Collapse>
                 </React.Fragment>
               ))}
-            </Box>
+            </List>
           </Paper>
 
           <Box
@@ -733,240 +736,234 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
               pt: 0,
             }}
           >
-            <Box sx={{ flex: "0 0 auto", minHeight: 0 }}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", sm: "2fr 1fr 1.5fr" },
-                  gap: 2,
-                  mb: 1,
-                  alignItems: "center",
-                }}
-              >
-                <FormControl fullWidth size="small">
-                  <InputLabel>Subset (Industry Group)</InputLabel>
-                  <Select
-                    value={subset}
-                    label="Subset (Industry Group)"
-                    onChange={(e) => setSubset(e.target.value)}
-                  >
-                    {subsets.map((s) => (
-                      <MenuItem key={s} value={s}>
-                        {s}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <TextField
-                  size="small"
-                  label="Cutoff (%)"
-                  type="number"
-                  value={cutoff}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    if (!Number.isNaN(val)) setCutoff(val);
-                  }}
-                  inputProps={{ min: 0, max: 100, step: 1 }}
-                />
-
-                <Box sx={{ display: "flex", flexDirection: "column" }}>
-                  <Typography
-                    variant="caption"
-                    sx={{ mb: 0.5, lineHeight: 1 }}
-                  >
-                    Sort order
-                  </Typography>
-                  <ToggleButtonGroup
-                    exclusive
-                    size="small"
-                    value={sortOrder}
-                    onChange={(_, val) => val && setSortOrder(val)}
-                  >
-                    <ToggleButton value="asc">Ascending</ToggleButton>
-                    <ToggleButton value="desc">Descending</ToggleButton>
-                  </ToggleButtonGroup>
-                </Box>
-              </Box>
-
+            <Box sx={{ flex: "1 0 auto", minHeight: 0, mt: 0 }}>
               <Box
                 sx={{
                   display: "grid",
                   gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
                   gap: 2,
-                  alignItems: "stretch",
+                  alignItems: "flex-start",
                 }}
               >
-                <Paper
-                  variant="outlined"
-                  sx={{ maxHeight: 150, overflowY: "auto" }}
-                >
-                  <List dense disablePadding>
-                    {filteredStocks.length === 0 && (
-                      <ListItem>
+                <Box>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "2fr 1fr",
+                      gap: 1.5,
+                      mb: 1,
+                      alignItems: "center",
+                    }}
+                  >
+                    <TextField
+                      size="small"
+                      label="Cutoff (%)"
+                      type="number"
+                      value={cutoff}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (!Number.isNaN(val)) setCutoff(val);
+                      }}
+                      inputProps={{ min: 0, max: 100, step: 1 }}
+                    />
+
+                    <ToggleButtonGroup
+                      exclusive
+                      size="small"
+                      value={sortOrder}
+                      onChange={(_, val) => val && setSortOrder(val)}
+                      fullWidth
+                    >
+                      <ToggleButton value="asc">Asc</ToggleButton>
+                      <ToggleButton value="desc">Desc</ToggleButton>
+                    </ToggleButtonGroup>
+                  </Box>
+
+                  <Paper
+                    variant="outlined"
+                    sx={{ maxHeight: 320, overflowY: "auto" }}
+                  >
+                    <List dense disablePadding>
+                      <ListItem sx={{ bgcolor: "#f5f5f5", py: 1 }}>
                         <ListItemText
-                          primary={`No stocks in "${subsetLabel}" above ${cutoff}%.`}
+                          primary={`Stocks in "${subsetLabel}"`}
                           primaryTypographyProps={{
-                            variant: "body2",
-                            color: "text.secondary",
+                            variant: "subtitle2",
+                            fontWeight: 600,
                           }}
                         />
                       </ListItem>
-                    )}
-
-                    {filteredStocks.map((stock, idx) => (
-                      <React.Fragment key={`${stock.name}-${idx}`}>
-                        {idx > 0 && <Divider />}
-                        <ListItem
-                          secondaryAction={
-                            <Typography variant="body2">
-                              {stock.percentage.toFixed(1)}%
-                            </Typography>
-                          }
-                        >
-                          <ListItemText primary={stock.name} />
+                      <Divider />
+                      {filteredStocks.length === 0 && (
+                        <ListItem>
+                          <ListItemText
+                            primary={`No stocks in "${subsetLabel}" above ${cutoff}%.`}
+                            primaryTypographyProps={{
+                              variant: "body2",
+                              color: "text.secondary",
+                            }}
+                          />
                         </ListItem>
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </Paper>
+                      )}
 
-                <Paper variant="outlined" sx={{ p: 1 }}>
+                      {filteredStocks.map((stock, idx) => (
+                        <React.Fragment key={`${stock.name}-${idx}`}>
+                          {idx > 0 && <Divider />}
+                          <ListItem
+                            secondaryAction={
+                              <Typography variant="body2">
+                                {stock.percentage.toFixed(1)}%
+                              </Typography>
+                            }
+                          >
+                            <ListItemText 
+                              primary={stock.name}
+                              primaryTypographyProps={{
+                                variant: "body2",
+                              }}
+                            />
+                          </ListItem>
+                        </React.Fragment>
+                      ))}
+                    </List>
+                  </Paper>
+                </Box>
+
+                <Box>
+                  <Paper variant="outlined" sx={{ p: 1, mb: 2 }}>
+                    <Plot
+                      data={
+                        [
+                          {
+                            y: subsetWeights,
+                            type: "histogram",
+                            orientation: "h",
+                            ybins: { start: 0, end: 100, size: 5 },
+                            marker: {
+                              opacity: 0.6,
+                              color: "rgba(95, 132, 187, 0.7)",
+                              line: {
+                                color: "rgba(0, 102, 255, 0.7)",
+                                width: 1.5,
+                              },
+                            },
+                            hovertemplate:
+                              "%{y}–%{y+5}%: %{x} stocks<extra></extra>",
+                          },
+                        ] as any
+                      }
+                      layout={
+                        {
+                          height: 180,
+                          margin: { l: 60, r: 15, t: 0, b: 25 },
+                          xaxis: { title: { text: "Count" } },
+                          yaxis: {
+                            range: [0, 100],
+                            title: { text: "Top IG weight (%)" },
+                          },
+                          shapes: [
+                            {
+                              type: "line",
+                              xref: "paper",
+                              yref: "y",
+                              x0: 0,
+                              x1: 1,
+                              y0: cutoff,
+                              y1: cutoff,
+                              line: {
+                                width: 2,
+                                dash: "dash",
+                                color: "deeppink",
+                              },
+                            },
+                          ],
+                        } as any
+                      }
+                      config={{ displayModeBar: false, responsive: true } as any}
+                      style={{ width: "100%" }}
+                    />
+                  </Paper>
+
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 1.5,
+                      mb: 0.5,
+                    }}
+                  >
+                    <FormControl fullWidth size="small">
+                      <InputLabel>y-axis (Industry Group)</InputLabel>
+                      <Select
+                        value={scatterIG}
+                        label="y-axis (Industry Group)"
+                        onChange={(e) => setScatterIG(e.target.value)}
+                      >
+                        {allIGNames.map((ig) => (
+                          <MenuItem key={ig} value={ig}>
+                            {ig}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth size="small">
+                      <InputLabel>x-axis (Sector)</InputLabel>
+                      <Select
+                        value={scatterSector}
+                        label="x-axis (Sector)"
+                        onChange={(e) => setScatterSector(e.target.value)}
+                      >
+                        {allSectorNames.map((sec) => (
+                          <MenuItem key={sec} value={sec}>
+                            {sec}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+
                   <Plot
                     data={
                       [
                         {
-                          y: subsetWeights,
-                          type: "histogram",
-                          orientation: "h",
-                          ybins: { start: 0, end: 100, size: 5 },
-                          marker: {
-                            opacity: 0.6,
-                            color: "rgba(95, 132, 187, 0.7)",
-                            line: {
-                              color: "rgba(0, 102, 255, 0.7)",
-                              width: 1.5,
-                            },
-                          },
+                          x: scatterData.map((p) => p.x),
+                          y: scatterData.map((p) => p.y),
+                          text: scatterData.map((p) => p.name),
+                          mode: "markers",
+                          type: "scatter",
+                          marker: { size: 9, color: "black" },
+                          name: "Stocks",
                           hovertemplate:
-                            "%{y}–%{y+5}%: %{x} stocks<extra></extra>",
+                            "%{text}<br>" +
+                            `${scatterSector}: %{x:.1f}%<br>` +
+                            `${scatterIG}: %{y:.1f}%<extra></extra>`,
                         },
                       ] as any
                     }
                     layout={
                       {
-                        height: 150,
-                        margin: { l: 60, r: 15, t: 0, b: 25 },
-                        xaxis: { title: { text: "Count" } },
-                        yaxis: {
-                          range: [0, 100],
-                          title: { text: "Top IG weight (%)" },
-                        },
-                        shapes: [
-                          {
-                            type: "line",
-                            xref: "paper",
-                            yref: "y",
-                            x0: 0,
-                            x1: 1,
-                            y0: cutoff,
-                            y1: cutoff,
-                            line: {
-                              width: 2,
-                              dash: "dash",
-                              color: "deeppink",
-                            },
+                        height: 160,
+                        margin: { l: 60, r: 20, t: 5, b: 40 },
+                        xaxis: {
+                          title: {
+                            text: scatterSector || "Sector weight (%)",
                           },
-                        ],
+                          range: [0, 100],
+                        },
+                        yaxis: {
+                          title: {
+                            text: scatterIG || "Industry-group weight (%)",
+                          },
+                          range: [0, 100],
+                        },
                       } as any
                     }
                     config={{ displayModeBar: false, responsive: true } as any}
                     style={{ width: "100%" }}
                   />
-                </Paper>
+                </Box>
               </Box>
-            </Box>
-
-            <Box sx={{ flex: "1 0 auto", minHeight: 0, mt: 0 }}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                  gap: 2,
-                  mb: 0.5,
-                  maxWidth: 420,
-                }}
-              >
-                <FormControl fullWidth size="small">
-                  <InputLabel>y-axis (Industry Group)</InputLabel>
-                  <Select
-                    value={scatterIG}
-                    label="y-axis (Industry Group)"
-                    onChange={(e) => setScatterIG(e.target.value)}
-                  >
-                    {allIGNames.map((ig) => (
-                      <MenuItem key={ig} value={ig}>
-                        {ig}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl fullWidth size="small">
-                  <InputLabel>x-axis (Sector)</InputLabel>
-                  <Select
-                    value={scatterSector}
-                    label="x-axis (Sector)"
-                    onChange={(e) => setScatterSector(e.target.value)}
-                  >
-                    {allSectorNames.map((sec) => (
-                      <MenuItem key={sec} value={sec}>
-                        {sec}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-
-              <Plot
-                data={
-                  [
-                    {
-                      x: scatterData.map((p) => p.x),
-                      y: scatterData.map((p) => p.y),
-                      text: scatterData.map((p) => p.name),
-                      mode: "markers",
-                      type: "scatter",
-                      marker: { size: 9, color: "black" },
-                      name: "Stocks",
-                      hovertemplate:
-                        "%{text}<br>" +
-                        `${scatterSector}: %{x:.1f}%<br>` +
-                        `${scatterIG}: %{y:.1f}%<extra></extra>`,
-                    },
-                  ] as any
-                }
-                layout={
-                  {
-                    height: 200,
-                    margin: { l: 60, r: 20, t: 5, b: 40 },
-                    xaxis: {
-                      title: {
-                        text: scatterSector || "Sector weight (%)",
-                      },
-                      range: [0, 100],
-                    },
-                    yaxis: {
-                      title: {
-                        text: scatterIG || "Industry-group weight (%)",
-                      },
-                      range: [0, 100],
-                    },
-                  } as any
-                }
-                config={{ displayModeBar: false, responsive: true } as any}
-                style={{ width: "100%" }}
-              />
             </Box>
           </Box>
         </Box>
@@ -979,7 +976,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "2fr 2fr 1.5fr 1.5fr" },
+          gridTemplateColumns: { xs: "1fr", md: "1.5fr 1.5fr 1.5fr 1fr 1fr" },
           gap: 2,
           mb: 1.5,
           alignItems: "center",
@@ -1015,6 +1012,21 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
           </Select>
         </FormControl>
 
+        <FormControl fullWidth size="small">
+          <InputLabel>Comparison Stock</InputLabel>
+          <Select
+            value={comparisonStockIsin}
+            label="Comparison Stock"
+            onChange={(e) => setComparisonStockIsin(e.target.value)}
+          >
+            {combinedStocks.map((s) => (
+              <MenuItem key={s.isin} value={s.isin}>
+                {s.name} ({s.isin})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <Box>
           <Typography variant="caption" sx={{ mb: 0.5, display: "block" }}>
             Display Industry Groups
@@ -1032,7 +1044,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
 
         <Box>
           <Typography variant="caption" sx={{ mb: 0.5, display: "block" }}>
-            Display Weight Distributions
+            Compare weights
           </Typography>
           <ToggleButtonGroup
             exclusive
@@ -1048,7 +1060,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
         </Box>
       </Box>
 
-      {showWeightDistributions ? (
+      {!showWeightDistributions ? (
         <Plot
           data={
             (() => {
@@ -1061,7 +1073,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                 name: selectedStock?.name ?? "Selected stock",
                 marker: { color: "rgba(66, 133, 244, 0.8)" },
                 offsetgroup: "stock",
-                width: 0.3,
+                width: 0.35,
               });
 
               // Add stacked remainder bars to reach 100%
@@ -1073,12 +1085,12 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                 name: "Remainder",
                 marker: { color: "lightgray", opacity: 0.3 },
                 offsetgroup: "stock",
-                width: 0.3,
+                width: 0.35,
                 showlegend: false,
                 hovertemplate: "Remainder: %{y:.1f}%<extra></extra>",
               });
 
-              const curveWidth = 0.3;
+              const curveWidth = 0.39;
 
               filteredSectorData.sectors.forEach((sector, idx) => {
                 const samples = distSamplesBenchBySector[sector] ?? [];
@@ -1110,7 +1122,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
 
                 densities.forEach((d, i) => {
                   const bow = (d / maxD) * curveWidth;
-                  curveX.push(xCenter - 0.15 + bow);
+                  curveX.push(xCenter - 0.195 + bow);
                   curveY.push(ys[i]);
                 });
 
@@ -1139,14 +1151,29 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
           layout={
             {
               barmode: "stack",
-              height: 260,
-              margin: { l: 60, r: 20, t: 10, b: 40 },
-              yaxis: { title: { text: "Weight (%)" }, range: [0, 100] },
+              height: 300,
+              margin: { l: 60, r: 20, t: 45, b: 60 },
+              yaxis: { 
+                title: { text: "Weight (%)" }, 
+                range: [0, 100],
+                tickmode: "linear",
+                tick0: 0,
+                dtick: 20,
+                zeroline: true,
+                zerolinewidth: 2,
+                zerolinecolor: "black",
+                showline: true,
+                linewidth: 2,
+                linecolor: "black",
+              },
               xaxis: {
                 title: { text: "" },
                 tickmode: "array",
-                tickvals: filteredSectorData.positions,
+                tickvals: filteredSectorData.positions.map(v => v - 0.3),
                 ticktext: filteredSectorData.sectors,
+                range: [0.5, 11.5],
+                side: "top",
+                tickangle: -25,
               },
               shapes: filteredSectorData.sectors.map((sector, idx) => {
                 const samples = distSamplesBenchBySector[sector] ?? [];
@@ -1156,8 +1183,8 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                   type: "line",
                   xref: "x",
                   yref: "y",
-                  x0: xCenter - 0.15,
-                  x1: xCenter + 0.15,
+                  x0: xCenter - 0.195,
+                  x1: xCenter + 0.195,
                   y0: med,
                   y1: med,
                   line: {
@@ -1173,111 +1200,311 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
           style={{ width: "100%" }}
         />
       ) : showIndustryGroups ? (
-        <Plot
-          data={
-            (() => {
-              const tempData: Array<{ ig: string; stockWeight: number; benchWeight: number }> = [];
-              
-              allIGNames.forEach((ig, idx) => {
-                const stockW = igStockWeights[idx];
-                // Only include industry groups where the stock has non-zero weight
-                if (stockW > 0) {
-                  const benchW = igBenchWeights[idx];
-                  tempData.push({ ig, stockWeight: stockW, benchWeight: benchW });
-                }
-              });
-              
-              // Sort by stock weight in descending order
-              tempData.sort((a, b) => b.stockWeight - a.stockWeight);
-              
-              const filteredIGs: string[] = [];
-              const filteredStockWeights: number[] = [];
-              const filteredBenchWeights: number[] = [];
-              
-              tempData.forEach(item => {
-                filteredIGs.push(item.ig);
-                filteredStockWeights.push(item.stockWeight);
-                filteredBenchWeights.push(item.benchWeight);
-              });
-              
-              return [
+        (() => {
+          const tempData: Array<{ ig: string; stockWeight: number; compWeight: number }> = [];
+          
+          allIGNames.forEach((ig) => {
+            const stockW = selectedStock?.industryGroups[ig] || 0;
+            const compW = comparisonStock?.industryGroups[ig] || 0;
+            // Include if either stock has non-zero weight
+            if (stockW > 0 || compW > 0) {
+              tempData.push({ ig, stockWeight: stockW, compWeight: compW });
+            }
+          });
+          
+          // Separate IGs where selected stock has weight vs only comparison stock has weight
+          const selectedHasWeight = tempData.filter(item => item.stockWeight > 0);
+          const onlyCompHasWeight = tempData.filter(item => item.stockWeight === 0 && item.compWeight > 0);
+          
+          // Sort selected stock IGs by weight descending
+          selectedHasWeight.sort((a, b) => b.stockWeight - a.stockWeight);
+          // Sort comparison-only IGs by comparison weight descending
+          onlyCompHasWeight.sort((a, b) => b.compWeight - a.compWeight);
+          
+          // Combine: selected stock IGs first, then comparison-only IGs
+          const combinedData = [...selectedHasWeight, ...onlyCompHasWeight];
+          
+          const filteredIGs: string[] = [];
+          const filteredStockWeights: number[] = [];
+          const filteredCompWeights: number[] = [];
+          
+          combinedData.forEach(item => {
+            filteredIGs.push(item.ig);
+            filteredStockWeights.push(item.stockWeight);
+            filteredCompWeights.push(item.compWeight);
+          });
+          
+          // Filter IGs and weights to only show bars where stock has weight
+          const stockIGs: string[] = [];
+          const stockWeightsFiltered: number[] = [];
+          const stockRemainderIGs: string[] = [];
+          const stockRemainderValues: number[] = [];
+          const stockRemainderBase: number[] = [];
+          
+          combinedData.forEach(item => {
+            if (item.stockWeight > 0) {
+              stockIGs.push(item.ig);
+              stockWeightsFiltered.push(item.stockWeight);
+              stockRemainderIGs.push(item.ig);
+              stockRemainderValues.push(100 - item.stockWeight);
+              stockRemainderBase.push(item.stockWeight);
+            }
+          });
+          
+          const compRemainders = filteredCompWeights.map(w => 100 - w);
+          
+          // Find separator position (between selected stock IGs and comparison-only IGs)
+          const separatorIndex = selectedHasWeight.length;
+          
+          // Create shapes for separator line if there are comparison-only IGs
+          const shapes: any[] = onlyCompHasWeight.length > 0 && separatorIndex < filteredIGs.length ? [{
+            type: "line",
+            xref: "paper",
+            yref: "paper",
+            x0: (separatorIndex / filteredIGs.length),
+            x1: (separatorIndex / filteredIGs.length),
+            y0: 0,
+            y1: 1,
+            line: {
+              color: "gray",
+              width: 2,
+              dash: "dot",
+            },
+          }] : [];
+
+          return (
+            <Plot
+              data={[
                 {
-                  x: filteredIGs,
-                  y: filteredStockWeights,
+                  x: stockIGs,
+                  y: stockWeightsFiltered,
                   type: "bar",
                   name: selectedStock?.name ?? "Selected stock",
                   marker: { color: "rgba(66, 133, 244, 0.8)" },
-                  width: 0.3,
+                  width: 0.39,
+                  offset: -0.25,
+                },
+                {
+                  x: stockRemainderIGs,
+                  y: stockRemainderValues,
+                  type: "bar",
+                  marker: { color: "lightgray" },
+                  opacity: 0.25,
+                  showlegend: false,
+                  width: 0.39,
+                  offset: -0.25,
+                  base: stockRemainderBase,
                 },
                 {
                   x: filteredIGs,
-                  y: filteredBenchWeights,
+                  y: filteredCompWeights,
                   type: "bar",
-                  name: currentBenchmark?.label ?? "Benchmark",
-                  opacity: 0.5,
-                  width: 0.3,
+                  name: comparisonStock?.name ?? "Comparison stock",
+                  marker: { color: "rgba(255, 127, 80, 0.8)" },
+                  width: 0.35,
+                  offset: 0.25,
                 },
-              ] as any;
-            })()
-          }
-          layout={
-            {
-              barmode: "group",
-              height: 260,
-              margin: { l: 60, r: 20, t: 10, b: 120 },
-              yaxis: { title: { text: "Weight (%)" }, range: [0, 100] },
-              xaxis: {
-                title: { text: "Industry Groups" },
-                tickangle: -45,
-              },
-              showlegend: true,
-            } as any
-          }
-          config={{ displayModeBar: false, responsive: true } as any}
-          style={{ width: "100%" }}
-        />
+                {
+                  x: filteredIGs,
+                  y: compRemainders,
+                  type: "bar",
+                  marker: { color: "lightgray" },
+                  opacity: 0.3,
+                  showlegend: false,
+                  width: 0.35,
+                  offset: 0.25,
+                  base: filteredCompWeights,
+                },
+              ] as any}
+              layout={{
+                barmode: "group",
+                bargap: 0.65,
+                bargroupgap: 0.05,
+                height: 300,
+                margin: { l: 60, r: 20, t: 45, b: 60 },
+                yaxis: { 
+                  title: { text: "Weight (%)" }, 
+                  range: [0, 100],
+                  tickmode: "linear",
+                  tick0: 0,
+                  dtick: 20,
+                  zeroline: true,
+                  zerolinewidth: 2,
+                  zerolinecolor: "black",
+                  showline: true,
+                  linewidth: 2,
+                  linecolor: "black",
+                },
+                xaxis: {
+                  title: { text: "" },
+                  tickvals: filteredSectorData.positions.map(v => v - 0.3),
+                  side: "top",
+                  tickangle: -25,
+                },
+                shapes: shapes,
+                showlegend: false,
+              } as any}
+              config={{ displayModeBar: false, responsive: true } as any}
+              style={{ width: "100%" }}
+            />
+          );
+        })()
       ) : (
-        <Plot
-          data={
-            [
-              {
-                x: filteredSectorData.positions,
-                y: filteredSectorData.stockWeights,
-                type: "bar",
-                name: selectedStock?.name ?? "Selected stock",
-                marker: { color: "rgba(66, 133, 244, 0.8)" },
-                offsetgroup: "stock",
-                width: 0.3,
-              },
-              {
-                x: filteredSectorData.positions,
-                y: filteredSectorData.benchWeights,
-                type: "bar",
-                name: currentBenchmark?.label ?? "Benchmark",
-                offsetgroup: "bench",
-                opacity: 0.4,
-                width: 0.3,
-              },
-            ] as any
-          }
-          layout={
-            {
-              barmode: "group",
-              height: 260,
-              margin: { l: 60, r: 20, t: 10, b: 40 },
-              yaxis: { title: { text: "Weight (%)" }, range: [0, 100] },
-              xaxis: {
-                title: { text: "" },
-                tickmode: "array",
-                tickvals: filteredSectorData.positions,
-                ticktext: filteredSectorData.sectors,
-              },
-              showlegend: true,
-            } as any
-          }
-          config={{ displayModeBar: false, responsive: true } as any}
-          style={{ width: "100%" }}
-        />
+        (() => {
+          // Build comparison data for sectors
+          const tempData: Array<{ sector: string; stockWeight: number; compWeight: number }> = [];
+          
+          allSectorNames.forEach((sector) => {
+            const stockW = selectedStock?.sectors[sector] || 0;
+            const compW = comparisonStock?.sectors[sector] || 0;
+            // Include if either stock has non-zero weight
+            if (stockW > 0 || compW > 0) {
+              tempData.push({ sector, stockWeight: stockW, compWeight: compW });
+            }
+          });
+          
+          // Separate sectors where selected stock has weight vs only comparison stock has weight
+          const selectedHasWeight = tempData.filter(item => item.stockWeight > 0);
+          const onlyCompHasWeight = tempData.filter(item => item.stockWeight === 0 && item.compWeight > 0);
+          
+          // Sort selected stock sectors by weight descending
+          selectedHasWeight.sort((a, b) => b.stockWeight - a.stockWeight);
+          // Sort comparison-only sectors by comparison weight descending
+          onlyCompHasWeight.sort((a, b) => b.compWeight - a.compWeight);
+          
+          // Combine: selected stock sectors first, then comparison-only sectors
+          const combinedData = [...selectedHasWeight, ...onlyCompHasWeight];
+          
+          const sectors: string[] = [];
+          const stockWeights: number[] = [];
+          const compWeights: number[] = [];
+          const positions: number[] = [];
+          
+          combinedData.forEach((item, idx) => {
+            sectors.push(item.sector);
+            stockWeights.push(item.stockWeight);
+            compWeights.push(item.compWeight);
+            positions.push(idx + 1);
+          });
+          
+          // Filter positions and weights to only show bars where stock has weight
+          const stockPositions: number[] = [];
+          const stockWeightsFiltered: number[] = [];
+          const stockRemainderPositions: number[] = [];
+          const stockRemainderValues: number[] = [];
+          const stockRemainderBase: number[] = [];
+          
+          combinedData.forEach((item, idx) => {
+            if (item.stockWeight > 0) {
+              stockPositions.push(idx + 1);
+              stockWeightsFiltered.push(item.stockWeight);
+              stockRemainderPositions.push(idx + 1);
+              stockRemainderValues.push(100 - item.stockWeight);
+              stockRemainderBase.push(item.stockWeight);
+            }
+          });
+          
+          const compRemainders = compWeights.map((w: number) => 100 - w);
+          
+          // Find separator position (between selected stock sectors and comparison-only sectors)
+          const separatorPosition = selectedHasWeight.length + 0.9;
+          
+          return (
+            <Plot
+              data={
+                [
+                  {
+                    x: stockPositions,
+                    y: stockWeightsFiltered,
+                    type: "bar",
+                    name: selectedStock?.name ?? "Selected stock",
+                    marker: { color: "rgba(66, 133, 244, 0.8)" },
+                    width: 0.35,
+                    offset: -0.25,
+                  },
+                  {
+                    x: stockRemainderPositions,
+                    y: stockRemainderValues,
+                    type: "bar",
+                    marker: { color: "lightgray" },
+                    opacity: 0.3,
+                    showlegend: false,
+                    width: 0.35,
+                    offset: -0.25,
+                    base: stockRemainderBase,
+                  },
+                  {
+                    x: positions,
+                    y: compWeights,
+                    type: "bar",
+                    name: comparisonStock?.name ?? "Comparison stock",
+                    marker: { color: "rgba(255, 127, 80, 0.8)" },
+                    width: 0.35,
+                    offset: 0.25,
+                  },
+                  {
+                    x: positions,
+                    y: compRemainders,
+                    type: "bar",
+                    marker: { color: "lightgray" },
+                    opacity: 0.2,
+                    showlegend: false,
+                    width: 0.35,
+                    offset: 0.25,
+                    base: compWeights,
+                  },
+                ] as any
+              }
+              layout={
+                {
+                  barmode: "overlay",
+                  bargap: 0.65,
+                  height: 300,
+                  margin: { l: 60, r: 20, t: 45, b: 60 },
+                  yaxis: { 
+                    title: { text: "Weight (%)" }, 
+                    range: [0, 100],
+                    tickmode: "linear",
+                    tick0: 0,
+                    dtick: 20,
+                    zeroline: true,
+                    zerolinewidth: 2,
+                    zerolinecolor: "black",
+                    showline: true,
+                    linewidth: 2,
+                    linecolor: "black",
+                  },
+                  xaxis: {
+                    title: { text: "" },
+                    tickmode: "array",
+                    tickvals: positions,
+                    ticktext: sectors,
+                    range: [0.5, 11.5],
+                    side: "top",
+                    tickangle: -25,
+                  },
+                  shapes: onlyCompHasWeight.length > 0 ? [{
+                    type: "line",
+                    xref: "x",
+                    yref: "paper",
+                    x0: separatorPosition,
+                    x1: separatorPosition,
+                    y0: 0,
+                    y1: 1,
+                    line: {
+                      color: "gray",
+                      width: 2,
+                      dash: "dot",
+                    },
+                  }] : [],
+                  showlegend: false,
+                } as any
+              }
+              config={{ displayModeBar: false, responsive: true } as any}
+              style={{ width: "100%" }}
+            />
+          );
+        })()
       )}
     </Box>
   );

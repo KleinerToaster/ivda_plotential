@@ -6,10 +6,12 @@ import WeightDifferenceView from "./components/WeightDifferenceView";
 import StockListPanel from "./components/StockListPanel";
 import SimilarStocks from "./components/SimilarStocks";
 import DataValidityOverlay from "./components/DataValidityOverlay";
+import PortfolioBuilderOverlay from "./components/PortfolioBuilderOverlay";
 import rawStockData from "./stock_data.json";
 
 function App() {
   const [showOverlay, setShowOverlay] = useState(false);
+  const [showPortfolioBuilder, setShowPortfolioBuilder] = useState(false);
 
   const companies = rawStockData.map((s: any) => ({
     isin: s.isin,
@@ -31,6 +33,14 @@ function App() {
           <Button
             color="inherit"
             size="small"
+            onClick={() => setShowPortfolioBuilder(true)}
+            sx={{ border: "1px solid white", ml: 2 }}
+          >
+            Portfolio Builder
+          </Button>
+          <Button
+            color="inherit"
+            size="small"
             onClick={() => setShowOverlay(true)}
             sx={{ border: "1px solid white", ml: 2 }}
           >
@@ -42,6 +52,11 @@ function App() {
         open={showOverlay}
         onClose={() => setShowOverlay(false)}
         companies={companies}
+      />
+      <PortfolioBuilderOverlay
+        open={showPortfolioBuilder}
+        onClose={() => setShowPortfolioBuilder(false)}
+        stocks={companies}
       />
       <Box
         sx={{
@@ -67,7 +82,7 @@ function App() {
             height: "100%",
           }}
         >
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 1 }}>
             <Box id="drilldown-section">
               <StockListPanel section="drilldown" />
             </Box>
@@ -76,7 +91,7 @@ function App() {
           <Box
             sx={{
               borderTop: "2px solid #555",
-              my: 2,
+              my: 1,
             }}
           />
 

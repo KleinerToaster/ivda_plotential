@@ -90,7 +90,7 @@ function App() {
 
           <Box
             sx={{
-              borderTop: "2px solid #555",
+              borderTop: "2px solid #000000ff",
               my: 1,
             }}
           />

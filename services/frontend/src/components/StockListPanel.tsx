@@ -6,7 +6,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField,
+  Slider,
   ToggleButtonGroup,
   ToggleButton,
   Paper,
@@ -778,17 +778,21 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                       alignItems: "center",
                     }}
                   >
-                    <TextField
-                      size="small"
-                      label="Cutoff (%)"
-                      type="number"
-                      value={cutoff}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        if (!Number.isNaN(val)) setCutoff(val);
-                      }}
-                      inputProps={{ min: 0, max: 100, step: 1 }}
-                    />
+                    <Box>
+                      <Typography variant="caption" gutterBottom>
+                        Cutoff: {cutoff}%
+                      </Typography>
+                      <Slider
+                        value={cutoff}
+                        onChange={(_, val) => setCutoff(val as number)}
+                        min={0}
+                        max={100}
+                        step={1}
+                        marks
+                        valueLabelDisplay="auto"
+                        valueLabelFormat={(val) => `${val}%`}
+                      />
+                    </Box>
 
                     <ToggleButtonGroup
                       exclusive
@@ -939,6 +943,20 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                           },
                           range: [0, 100],
                         },
+                        shapes: [
+                          {
+                            type: "line",
+                            x0: 0,
+                            y0: 0,
+                            x1: 100,
+                            y1: 100,
+                            line: {
+                              color: "gray",
+                              width: 1,
+                              dash: "dot",
+                            },
+                          },
+                        ],
                         showlegend: true,
                         legend: {
                           orientation: "h",

@@ -22,17 +22,40 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import Plot from "react-plotly.js";
 import rawStockData from "../stock_data.json";
 import rawAllBenchmarks from "../all_benchmarks.json";
+import sectorColorConfig from "../sectorColors.json";
+import sectorOrderConfig from "../sectorOrder.json";
 
 type SortOrder = "asc" | "desc";
 
 interface StockListPanelProps {
   section?: "drilldown" | "lower";
+  selectedStockIsin: string;
+  onStockSelect: (isin: string) => void;
 }
 
+// Ordered by average sector weight across all firms (highest to lowest)
 const SECTOR_TO_INDUSTRY_GROUPS: Record<string, string[]> = {
-  "Communication Services": [
-    "Media & Entertainment",
-    "Telecommunication Services",
+  Financials: ["Banks", "Financial Services", "Insurance"],
+  "Health Care": [
+    "Health Care Equipment & Services",
+    "Pharmaceuticals, Biotechnology & Life Sciences",
+  ],
+  "Information Technology": [
+    "Semiconductors & Semiconductor Equipment",
+    "Software & Services",
+    "Technology Hardware & Equipment",
+  ],
+  Industrials: [
+    "Capital Goods",
+    "Commercial & Professional Services",
+    "Transportation",
+  ],
+  Energy: ["Energy"],
+  Materials: ["Materials"],
+  "Consumer Staples": [
+    "Food & Staples Retailing",
+    "Food Beverage & Tobacco",
+    "Household & Personal Products",
   ],
   "Consumer Discretionary": [
     "Automobiles & Components",
@@ -40,31 +63,13 @@ const SECTOR_TO_INDUSTRY_GROUPS: Record<string, string[]> = {
     "Consumer Services",
     "Retailing",
   ],
-  "Consumer Staples": [
-    "Food & Staples Retailing",
-    "Food Beverage & Tobacco",
-    "Household & Personal Products",
-  ],
-  Energy: ["Energy"],
-  Financials: ["Banks", "Financial Services", "Insurance"],
-  "Health Care": [
-    "Health Care Equipment & Services",
-    "Pharmaceuticals, Biotechnology & Life Sciences",
-  ],
-  Industrials: [
-    "Capital Goods",
-    "Commercial & Professional Services",
-    "Transportation",
-  ],
-  "Information Technology": [
-    "Semiconductors & Semiconductor Equipment",
-    "Software & Services",
-    "Technology Hardware & Equipment",
-  ],
-  Materials: ["Materials"],
   "Real Estate": [
     "Equity Real Estate Investment Trusts (REITs)",
     "Real Estate Management & Development",
+  ],
+  "Communication Services": [
+    "Media & Entertainment",
+    "Telecommunication Services",
   ],
   Utilities: ["Utilities"],
 };
@@ -269,8 +274,23 @@ const median = (vals: number[]): number => {
   return valid[mid];
 };
 
-const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
+const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockIsin, onStockSelect }) => {
   const combinedStocks = COMBINED_STOCKS;
+
+  // Sector color palette loaded from shared config
+  const sectorColorPalette = useMemo(() => {
+    return sectorColorConfig.palette;
+  }, []);
+
+  const sectorColorMap = useMemo(() => {
+    // Use the shared ordered sectors list (ordered by average weight)
+    const sectors = sectorOrderConfig.orderedSectors;
+    const map: Record<string, string> = {};
+    sectors.forEach((sector, i) => {
+      map[sector] = sectorColorPalette[i % sectorColorPalette.length];
+    });
+    return map;
+  }, [sectorColorPalette]);
 
   const benchmarkOptions: BenchmarkOption[] = useMemo(() => {
     const opts: BenchmarkOption[] = [
@@ -451,9 +471,6 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
     return dataByIG;
   }, [combinedStocks, scatterSector]);
 
-  const [distStockIsin, setDistStockIsin] = useState<string>(
-    combinedStocks[0]?.isin ?? ""
-  );
   const [comparisonStockIsin, setComparisonStockIsin] = useState<string>(
     combinedStocks[1]?.isin ?? combinedStocks[0]?.isin ?? ""
   );
@@ -472,10 +489,10 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
 
   const selectedStock = useMemo(
     () =>
-      combinedStocks.find((s) => s.isin === distStockIsin) ||
+      combinedStocks.find((s) => s.isin === selectedStockIsin) ||
       combinedStocks[0] ||
       null,
-    [combinedStocks, distStockIsin]
+    [combinedStocks, selectedStockIsin]
   );
 
   const comparisonStock = useMemo(
@@ -700,7 +717,13 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
               {sectorIGMapping.map((row, idx) => (
                 <React.Fragment key={row.sector}>
                   {idx > 0 && <Divider />}
-                  <ListItemButton onClick={() => handleToggleSector(row.sector)}>
+                  <ListItemButton 
+                    onClick={() => handleToggleSector(row.sector)}
+                    sx={{
+                      borderLeft: `12px solid ${sectorColorMap[row.sector] || '#999'}`,
+                      pl: 1.5,
+                    }}
+                  >
                     <ListItemText
                       primary={row.sector}
                       primaryTypographyProps={{
@@ -791,6 +814,18 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                         marks
                         valueLabelDisplay="auto"
                         valueLabelFormat={(val) => `${val}%`}
+                        sx={{
+                          color: 'grey.500',
+                          '& .MuiSlider-thumb': {
+                            bgcolor: 'grey.600',
+                          },
+                          '& .MuiSlider-track': {
+                            bgcolor: 'grey.500',
+                          },
+                          '& .MuiSlider-rail': {
+                            bgcolor: 'grey.300',
+                          },
+                        }}
                       />
                     </Box>
 
@@ -993,9 +1028,9 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
         <FormControl fullWidth size="small">
           <InputLabel>Selected stock</InputLabel>
           <Select
-            value={distStockIsin}
+            value={selectedStockIsin}
             label="Selected stock"
-            onChange={(e) => setDistStockIsin(e.target.value)}
+            onChange={(e) => onStockSelect(e.target.value)}
           >
             {combinedStocks.map((s) => (
               <MenuItem key={s.isin} value={s.isin}>
@@ -1144,7 +1179,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                     width: 2,
                     shape: "spline",
                     smoothing: 1.3,
-                    color: "darkblue",
+                    color: "#555555",
                   },
                   hovertemplate: `${
                     currentBenchmark?.label ?? "Benchmark"
@@ -1197,7 +1232,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section }) => {
                   y1: med,
                   line: {
                     width: 4,
-                    color: "red",
+                    color: "#555555",
                   },
                 };
               }),

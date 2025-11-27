@@ -12,6 +12,9 @@ import rawStockData from "./stock_data.json";
 function App() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showPortfolioBuilder, setShowPortfolioBuilder] = useState(false);
+  const [selectedStockIsin, setSelectedStockIsin] = useState<string>(
+    rawStockData[0]?.isin ?? ""
+  );
 
   const companies = rawStockData.map((s: any) => ({
     isin: s.isin,
@@ -84,7 +87,11 @@ function App() {
         >
           <Box sx={{ mb: 1 }}>
             <Box id="drilldown-section">
-              <StockListPanel section="drilldown" />
+              <StockListPanel 
+                section="drilldown" 
+                selectedStockIsin={selectedStockIsin}
+                onStockSelect={setSelectedStockIsin}
+              />
             </Box>
           </Box>
 
@@ -96,21 +103,31 @@ function App() {
           />
 
           <Box sx={{ flexGrow: 1 }}>
-            <StockListPanel section="lower" />
+            <StockListPanel 
+              section="lower" 
+              selectedStockIsin={selectedStockIsin}
+              onStockSelect={setSelectedStockIsin}
+            />
           </Box>
         </Box>
         <Box
           sx={{
             width: "100%",
             maxWidth: 900,
-            ml: { md: 3 },
+            ml: { md: 0.2 },
           }}
         >
-          <WeightDifferenceView />
+          <WeightDifferenceView 
+            selectedStockIsin={selectedStockIsin}
+            onStockSelect={setSelectedStockIsin}
+          />
 
           <Divider sx={{ my: 4 }} />
 
-          <SimilarStocks />
+          <SimilarStocks 
+            selectedStockIsin={selectedStockIsin}
+            onStockSelect={setSelectedStockIsin}
+          />
         </Box>
       </Box>
     </Box>

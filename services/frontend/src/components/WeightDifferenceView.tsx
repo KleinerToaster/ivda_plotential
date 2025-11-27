@@ -14,6 +14,8 @@ import {
 import Plot from "react-plotly.js";
 import rawStockData from "../stock_data.json";
 import rawAllBenchmarks from "../all_benchmarks.json";
+import sectorColorConfig from "../sectorColors.json";
+import sectorOrderConfig from "../sectorOrder.json";
 
 interface CombinedStock {
   isin: string;
@@ -25,6 +27,11 @@ interface CombinedStock {
 }
 
 const STOCKS = rawStockData as unknown as CombinedStock[];
+
+interface WeightDifferenceViewProps {
+  selectedStockIsin: string;
+  onStockSelect: (isin: string) => void;
+}
 
 type Level = "Sectors" | "Industry Groups";
 type CategoryFilter = "All" | "Top 5" | "Top 10";
@@ -56,10 +63,8 @@ type BenchmarkOption = {
   ref?: CountryRegionMarketBenchmark;
 };
 
-const WeightDifferenceView: React.FC = () => {
+const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({ selectedStockIsin, onStockSelect }) => {
   const hasData = STOCKS.length > 0;
-
-  const [portfolio1Isin, setPortfolio1Isin] = useState<string>("");
 
   const [portfolio2Key, setPortfolio2Key] = useState<string>("");
 
@@ -124,10 +129,10 @@ const WeightDifferenceView: React.FC = () => {
 
   const portfolio1Stock = useMemo<CombinedStock | null>(
     () =>
-      hasData && portfolio1Isin
-        ? STOCKS.find((s) => s.isin === portfolio1Isin) ?? null
+      hasData && selectedStockIsin
+        ? STOCKS.find((s) => s.isin === selectedStockIsin) ?? null
         : null,
-    [hasData, portfolio1Isin]
+    [hasData, selectedStockIsin]
   );
 
   const portfolio2IsAverage = portfolio2Key === "avg";
@@ -141,11 +146,8 @@ const WeightDifferenceView: React.FC = () => {
   );
 
   const sectorNames = useMemo(() => {
-    const set = new Set<string>();
-    STOCKS.forEach((st) =>
-      Object.keys(st.sectors || {}).forEach((k) => set.add(k))
-    );
-    return Array.from(set).sort();
+    // Use the shared ordered sectors list (ordered by average weight)
+    return sectorOrderConfig.orderedSectors;
   }, []);
 
   const igNames = useMemo(() => {
@@ -158,6 +160,16 @@ const WeightDifferenceView: React.FC = () => {
 
   const allCategories =
     level === "Sectors" ? sectorNames : igNames;
+
+  // Create color map for sectors
+  const sectorColorMap = useMemo(() => {
+    const distinctColors = sectorColorConfig.palette;
+    const map: Record<string, string> = {};
+    sectorOrderConfig.orderedSectors.forEach((sector, i) => {
+      map[sector] = distinctColors[i % distinctColors.length];
+    });
+    return map;
+  }, []);
 
   const universeBenchmarkAll = useMemo(() => {
     const avg: Record<string, number> = {};
@@ -320,7 +332,7 @@ const WeightDifferenceView: React.FC = () => {
     [categoriesList, benchmark2WeightsAllMap]
   );
 
-  const portfolio1IsNone = portfolio1Isin === "";
+  const portfolio1IsNone = selectedStockIsin === "";
 
   const portfolio1Label = portfolio1Stock?.name ?? "None";
 
@@ -345,14 +357,17 @@ const WeightDifferenceView: React.FC = () => {
   // Build list of active (non-baseline, non-None) inputs
   const activeInputs = useMemo(() => {
     const inputs: Array<{ key: string; weights: number[]; label: string; color: string }> = [];
+    const grayPalette = sectorColorConfig.weightDifferencePalette;
+    let colorIndex = 0;
     
     if (baseline !== "portfolio1" && !portfolio1IsNone) {
       inputs.push({
         key: "portfolio1",
         weights: portfolio1Weights,
         label: portfolio1Label,
-        color: "rgba(66, 133, 244, 0.8)",
+        color: grayPalette[colorIndex % grayPalette.length],
       });
+      colorIndex++;
     }
     
     if (baseline !== "portfolio2" && !portfolio2IsNone) {
@@ -360,8 +375,9 @@ const WeightDifferenceView: React.FC = () => {
         key: "portfolio2",
         weights: portfolio2Weights,
         label: portfolio2Label,
-        color: "rgba(52, 168, 83, 0.8)",
+        color: grayPalette[colorIndex % grayPalette.length],
       });
+      colorIndex++;
     }
     
     if (baseline !== "benchmark1" && benchmarkId !== "none") {
@@ -369,8 +385,9 @@ const WeightDifferenceView: React.FC = () => {
         key: "benchmark1",
         weights: benchmarkWeights,
         label: benchmarkLabel,
-        color: "rgba(251, 188, 5, 0.8)",
+        color: grayPalette[colorIndex % grayPalette.length],
       });
+      colorIndex++;
     }
     
     if (baseline !== "benchmark2" && benchmark2Id !== "none") {
@@ -378,8 +395,9 @@ const WeightDifferenceView: React.FC = () => {
         key: "benchmark2",
         weights: benchmark2Weights,
         label: benchmark2Label,
-        color: "rgba(234, 67, 53, 0.8)",
+        color: grayPalette[colorIndex % grayPalette.length],
       });
+      colorIndex++;
     }
     
     return inputs;
@@ -424,17 +442,17 @@ const WeightDifferenceView: React.FC = () => {
     }
 
     return activeInputs.map((input) => {
-      const diff = input.weights.map((w, i) => w - (baselineWeights[i] ?? 0));
+      const diff = input.weights.map((w, i) => (baselineWeights[i] ?? 0) - w);
       return {
         type: "bar" as const,
         orientation: "h" as const,
         x: diff,
         y: categoriesList,
-        name: `${input.label} - ${baselineLabel}`,
+        name: `${baselineLabel} - ${input.label}`,
         marker: { color: input.color },
         hovertemplate:
           "<b>%{y}</b><br>" +
-          `${input.label} - ${baselineLabel}: %{x:.2f}%<extra></extra>`,
+          `${baselineLabel} - ${input.label}: %{x:.2f}%<extra></extra>`,
       };
     });
   }, [activeInputs, baselineWeights, categoriesList, baselineLabel]);
@@ -471,30 +489,33 @@ const WeightDifferenceView: React.FC = () => {
       autorange: "reversed" as const,
       showgrid: false,
     },
-    shapes: categoriesList.flatMap((_, idx) => [
-      {
-        type: "line" as const,
-        x0: -maxAbs,
-        x1: maxAbs,
-        y0: idx - 0.5,
-        y1: idx - 0.5,
-        line: {
-          color: "rgba(128, 128, 128, 0.3)",
-          width: 1,
+    shapes: [
+      // Add horizontal grid lines
+      ...categoriesList.flatMap((_, idx) => [
+        {
+          type: "line" as const,
+          x0: -maxAbs,
+          x1: maxAbs,
+          y0: idx - 0.5,
+          y1: idx - 0.5,
+          line: {
+            color: "rgba(128, 128, 128, 0.3)",
+            width: 1,
+          },
         },
-      },
-      {
-        type: "line" as const,
-        x0: -maxAbs,
-        x1: maxAbs,
-        y0: idx + 0.5,
-        y1: idx + 0.5,
-        line: {
-          color: "rgba(128, 128, 128, 0.3)",
-          width: 1,
+        {
+          type: "line" as const,
+          x0: -maxAbs,
+          x1: maxAbs,
+          y0: idx + 0.5,
+          y1: idx + 0.5,
+          line: {
+            color: "rgba(128, 128, 128, 0.3)",
+            width: 1,
+          },
         },
-      },
-    ]),
+      ]),
+    ],
     showlegend: false,
   };
 
@@ -525,9 +546,9 @@ const WeightDifferenceView: React.FC = () => {
               minHeight: 6,
               padding: 0,
               "&.Mui-selected": {
-                bgcolor: "primary.main",
+                bgcolor: "grey.600",
                 "&:hover": {
-                  bgcolor: "primary.dark",
+                  bgcolor: "grey.700",
                 },
               },
               "&:not(.Mui-selected)": {
@@ -559,15 +580,15 @@ const WeightDifferenceView: React.FC = () => {
           size="small"
           options={[{ isin: "", name: "None" }, ...STOCKS]}
           getOptionLabel={(option) => option.isin === "" ? "None" : `${option.name} (${option.isin})`}
-          value={STOCKS.find((s) => s.isin === portfolio1Isin) || { isin: "", name: "None" } as any}
-          onChange={(_, newValue) => setPortfolio1Isin(newValue?.isin || "")}
+          value={STOCKS.find((s) => s.isin === selectedStockIsin) || { isin: "", name: "None" } as any}
+          onChange={(_, newValue) => onStockSelect(newValue?.isin || "")}
           renderInput={(params) => (
             <TextField
               {...params}
               label="Portfolio 1"
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  bgcolor: baseline === "portfolio1" ? "rgba(66, 133, 244, 0.1)" : "transparent",
+                  bgcolor: baseline === "portfolio1" ? "rgba(150, 150, 150, 0.1)" : "transparent",
                 },
               }}
             />
@@ -597,7 +618,7 @@ const WeightDifferenceView: React.FC = () => {
               label="Portfolio 2"
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  bgcolor: baseline === "portfolio2" ? "rgba(66, 133, 244, 0.1)" : "transparent",
+                  bgcolor: baseline === "portfolio2" ? "rgba(150, 150, 150, 0.1)" : "transparent",
                 },
               }}
             />
@@ -617,7 +638,7 @@ const WeightDifferenceView: React.FC = () => {
               label="Benchmark 1"
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  bgcolor: baseline === "benchmark1" ? "rgba(66, 133, 244, 0.1)" : "transparent",
+                  bgcolor: baseline === "benchmark1" ? "rgba(150, 150, 150, 0.1)" : "transparent",
                 },
               }}
             />
@@ -637,7 +658,7 @@ const WeightDifferenceView: React.FC = () => {
               label="Benchmark 2"
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  bgcolor: baseline === "benchmark2" ? "rgba(66, 133, 244, 0.1)" : "transparent",
+                  bgcolor: baseline === "benchmark2" ? "rgba(150, 150, 150, 0.1)" : "transparent",
                 },
               }}
             />

@@ -2,15 +2,21 @@ import React, { useMemo, useState } from "react";
 import {
   Box,
   Typography,
-  TextField,
+  Slider,
   FormControl,
   MenuItem,
   Select,
   InputLabel,
   Paper,
+  Autocomplete,
+  TextField,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import Plot from "react-plotly.js";
 import rawStockData from "../stock_data.json";
+import sectorColorConfig from "../sectorColors.json";
+import sectorOrderConfig from "../sectorOrder.json";
 
 interface CombinedStock {
   isin: string;
@@ -37,34 +43,27 @@ interface Edge {
   weight: number;
 }
 
-const cosDist = (a: number[], b: number[]): number => {
-  let dot = 0;
-  let na = 0;
-  let nb = 0;
-  for (let i = 0; i < a.length; i++) {
-    const va = a[i] ?? 0;
-    const vb = b[i] ?? 0;
-    dot += va * vb;
-    na += va * va;
-    nb += vb * vb;
-  }
-  if (na === 0 || nb === 0) {
-    return 1;
-  }
-  const sim = dot / (Math.sqrt(na) * Math.sqrt(nb));
-  return 1 - sim;
+// Seeded random number generator (mulberry32)
+const seededRandom = (seed: number) => {
+  return () => {
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 };
 
-const runLayout = (nodesIn: Node[], edges: Edge[], iterations = 250): Node[] => {
+const runLayout = (nodesIn: Node[], edges: Edge[], seed: number = 123, iterations = 500, coolingRate = 1.0): Node[] => {
   if (nodesIn.length === 0) return [];
 
   const nodes = nodesIn.map((n) => ({ ...n }));
+  const rng = seededRandom(seed);
 
   nodes.forEach((n, i) => {
     if (n.x === 0 && n.y === 0 && !n.isFocal) {
-      const angle = (2 * Math.PI * i) / Math.max(1, nodes.length);
-      n.x = Math.cos(angle);
-      n.y = Math.sin(angle);
+      // Use seeded random for initial positions
+      n.x = rng() * 0.2 - 0.1;
+      n.y = rng() * 0.2 - 0.1;
     }
   });
 
@@ -73,23 +72,30 @@ const runLayout = (nodesIn: Node[], edges: Edge[], iterations = 250): Node[] => 
     idToIdx[n.id] = i;
   });
 
-  const kRep = 0.05;
-  const kSpring = 0.02;
-  const baseLen = 0.3;
-  const lenScale = 1.0;
-
+  const numNodes = nodes.length;
+  // R's igraph FR algorithm scales with sqrt(n)
+  const area = numNodes * numNodes;
+  const k = Math.sqrt(area / numNodes);
+  
+  // Repulsive force constant
+  const kRep = k * k;
+  
   for (let iter = 0; iter < iterations; iter++) {
+    // Temperature cooling schedule (like R's FR)
+    const temp = Math.max(0.01, (1 - iter / iterations) * k * coolingRate);
+    
     const forces: { fx: number; fy: number }[] = nodes.map(() => ({
       fx: 0,
       fy: 0,
     }));
 
+    // Repulsive forces between all pairs
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const dx = nodes[j].x - nodes[i].x;
         const dy = nodes[j].y - nodes[i].y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
-        const force = kRep / (dist * dist);
+        const force = kRep / dist;
         const fx = (force * dx) / dist;
         const fy = (force * dy) / dist;
         forces[i].fx -= fx;
@@ -99,6 +105,8 @@ const runLayout = (nodesIn: Node[], edges: Edge[], iterations = 250): Node[] => 
       }
     }
 
+    // Attractive forces along edges
+    // R's igraph uses edge weights to scale the spring force
     edges.forEach((e) => {
       const i = idToIdx[e.source];
       const j = idToIdx[e.target];
@@ -106,9 +114,8 @@ const runLayout = (nodesIn: Node[], edges: Edge[], iterations = 250): Node[] => 
       const dy = nodes[j].y - nodes[i].y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
 
-      const desired = baseLen + lenScale * e.weight;
-      const delta = dist - desired;
-      const force = kSpring * delta;
+      // Weight scales the attractive force (higher similarity = stronger pull)
+      const force = (dist * dist / k) * e.weight;
       const fx = (force * dx) / dist;
       const fy = (force * dy) / dist;
 
@@ -118,11 +125,13 @@ const runLayout = (nodesIn: Node[], edges: Edge[], iterations = 250): Node[] => 
       forces[j].fy -= fy;
     });
 
-    const step = 0.05;
+    // Update positions with temperature-based step size
     nodes.forEach((n, i) => {
-      const damp = n.isFocal ? 0.1 : 1.0;
-      n.x += step * forces[i].fx * damp;
-      n.y += step * forces[i].fy * damp;
+      const disp = Math.sqrt(forces[i].fx * forces[i].fx + forces[i].fy * forces[i].fy) || 0.001;
+      const damp = n.isFocal ? 0.05 : 1.0;  // Keep focal node more stable
+      const delta = Math.min(disp, temp) / disp;
+      n.x += forces[i].fx * delta * damp;
+      n.y += forces[i].fy * delta * damp;
     });
   }
 
@@ -147,7 +156,12 @@ const runLayout = (nodesIn: Node[], edges: Edge[], iterations = 250): Node[] => 
   return nodes;
 };
 
-const SimilarStocks: React.FC = () => {
+interface SimilarStocksProps {
+  selectedStockIsin: string;
+  onStockSelect: (isin: string) => void;
+}
+
+const SimilarStocks: React.FC<SimilarStocksProps> = ({ selectedStockIsin, onStockSelect }) => {
   const stocks = rawStockData as unknown as CombinedStock[];
 
   const sectorKeys = useMemo(() => {
@@ -171,133 +185,359 @@ const SimilarStocks: React.FC = () => {
     [sectorKeys, igKeys]
   );
 
+  const focal = selectedStockIsin || stocks[0]?.isin || "";
+  const [k, setK] = useState<number>(20);
+  const [kPeer, setKPeer] = useState<number>(4);
+  const [featureType, setFeatureType] = useState<"both" | "sectors" | "industryGroups">("both");
+  const [iterations, setIterations] = useState<number>(500);
+  const [coolingRate, setCoolingRate] = useState<number>(1.0);
+  const [viewMode, setViewMode] = useState<"network" | "barchart">("network");
+
   const vecs = useMemo(() => {
     const map: Record<string, number[]> = {};
     stocks.forEach((s) => {
       const v: number[] = [];
-      featKeys.forEach((key) => {
-        const val =
-          s.sectors[key] ??
-          s.industryGroups[key] ??
-          0;
-        v.push(val);
-      });
+      
+      if (featureType === "both") {
+        featKeys.forEach((key) => {
+          const val =
+            s.sectors[key] ??
+            s.industryGroups[key] ??
+            0;
+          v.push(val);
+        });
+      } else if (featureType === "sectors") {
+        sectorKeys.forEach((key) => {
+          v.push(s.sectors[key] ?? 0);
+        });
+      } else if (featureType === "industryGroups") {
+        igKeys.forEach((key) => {
+          v.push(s.industryGroups[key] ?? 0);
+        });
+      }
+      
       map[s.isin] = v;
     });
     return map;
-  }, [stocks, featKeys]);
-
-  const [focal, setFocal] = useState<string>(() => stocks[0]?.isin ?? "");
-  const [k, setK] = useState<number>(10);
-  const [numPeers, setNumPeers] = useState<number>(5);
+  }, [stocks, featKeys, sectorKeys, igKeys, featureType]);
 
   const focalStock =
     stocks.find((s) => s.isin === focal) ?? stocks[0];
+
+  const cosineSim = (a: number[], b: number[]): number => {
+    let dot = 0;
+    let na = 0;
+    let nb = 0;
+    for (let i = 0; i < a.length; i++) {
+      const va = a[i] ?? 0;
+      const vb = b[i] ?? 0;
+      dot += va * vb;
+      na += va * va;
+      nb += vb * vb;
+    }
+    if (na === 0 || nb === 0) return 0;
+    return dot / (Math.sqrt(na) * Math.sqrt(nb));
+  };
 
   const nbrs = useMemo(() => {
     const fv = vecs[focal];
     if (!fv) return [];
 
-    const dists: { stock: CombinedStock; dist: number }[] = [];
+    const sims: { stock: CombinedStock; sim: number }[] = [];
 
     stocks.forEach((s) => {
       if (s.isin === focal) return;
       const v = vecs[s.isin];
       if (!v) return;
-      const dist = cosDist(fv, v);
-      dists.push({ stock: s, dist });
+      const sim = cosineSim(fv, v);
+      if (!isNaN(sim)) {
+        sims.push({ stock: s, sim });
+      }
     });
 
-    dists.sort((a, b) => a.dist - b.dist);
+    sims.sort((a, b) => b.sim - a.sim);
 
-    return dists.slice(0, k);
+    return sims.slice(0, k);
   }, [focal, k, vecs, stocks]);
+
+  const getDominantSector = (stock: CombinedStock): string => {
+    const sectors = stock.sectors || {};
+    let maxWeight = -1;
+    let dominant = "";
+    Object.entries(sectors).forEach(([sector, weight]) => {
+      if (weight > maxWeight) {
+        maxWeight = weight;
+        dominant = sector;
+      }
+    });
+    return dominant || "Unknown";
+  };
 
   const { layoutNodes, layoutEdges } = useMemo(() => {
     if (!focalStock) return { layoutNodes: [] as Node[], layoutEdges: [] as Edge[] };
 
     const nodes: Node[] = [];
+    const neighborIsins = nbrs.map(n => n.stock.isin);
+    
+    // Add focal node
     nodes.push({
       id: focalStock.isin,
-      label: `${focalStock.isin}\n${focalStock.name}`,
+      label: focalStock.isin,
       isFocal: true,
       x: 0,
       y: 0,
     });
 
-    // Only include up to numPeers neighbors
-    const peersToShow = nbrs.slice(0, numPeers);
+    // Add all k neighbors
+    // Create seed from sorted ISINs for reproducibility
+    const nodeISINs = [focalStock.isin, ...nbrs.map((n) => n.stock.isin)].sort();
+    const seedStr = nodeISINs.join("");
+    let graphSeed = 123;
+    for (let i = 0; i < seedStr.length; i++) {
+      graphSeed = ((graphSeed << 5) - graphSeed + seedStr.charCodeAt(i)) | 0;
+    }
     
-    peersToShow.forEach((n) => {
+    nbrs.forEach((n) => {
       nodes.push({
         id: n.stock.isin,
-        label: `${n.stock.isin}\n${n.stock.name}`,
+        label: n.stock.isin,
         isFocal: false,
-        x: Math.random() * 0.2 - 0.1,
-        y: Math.random() * 0.2 - 0.1,
+        x: 0,
+        y: 0,
       });
     });
 
-    const edges: Edge[] = [];
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const id1 = nodes[i].id;
-        const id2 = nodes[j].id;
-        const v1 = vecs[id1];
-        const v2 = vecs[id2];
-        if (!v1 || !v2) continue;
-        const w = cosDist(v1, v2);
-        edges.push({ source: id1, target: id2, weight: w });
-      }
+    // Edge list: focal -> neighbors (star edges)
+    const edgeMap = new Map<string, number>();
+    
+    nbrs.forEach((n) => {
+      const key = [focalStock.isin, n.stock.isin].sort().join("|");
+      edgeMap.set(key, n.sim);
+    });
+
+    // Peer-to-peer edges: for each neighbor, connect to its top k_peer peers
+    if (kPeer > 0 && nbrs.length > 1) {
+      nbrs.forEach((neighbor) => {
+        const neighborVec = vecs[neighbor.stock.isin];
+        if (!neighborVec) return;
+        
+        // Calculate similarity to all other neighbors
+        const peerSims: { isin: string; sim: number }[] = [];
+        nbrs.forEach((other) => {
+          if (other.stock.isin === neighbor.stock.isin) return;
+          const otherVec = vecs[other.stock.isin];
+          if (!otherVec) return;
+          const sim = cosineSim(neighborVec, otherVec);
+          if (!isNaN(sim)) {
+            peerSims.push({ isin: other.stock.isin, sim });
+          }
+        });
+        
+        // Sort by similarity and take top k_peer
+        peerSims.sort((a, b) => b.sim - a.sim);
+        const topPeers = peerSims.slice(0, Math.min(kPeer, peerSims.length));
+        
+        // Add edges to top peers
+        topPeers.forEach((peer) => {
+          const key = [neighbor.stock.isin, peer.isin].sort().join("|");
+          const existing = edgeMap.get(key);
+          // Keep max weight for deduplicated edges
+          if (existing === undefined || peer.sim > existing) {
+            edgeMap.set(key, peer.sim);
+          }
+        });
+      });
     }
 
-    const laidOut = runLayout(nodes, edges, 250);
+    // Convert edge map to edge list
+    const edges: Edge[] = [];
+    edgeMap.forEach((weight, key) => {
+      const [source, target] = key.split("|");
+      edges.push({ source, target, weight });
+    });
+
+    // Use Fruchterman-Reingold layout with deterministic seed
+    const laidOut = runLayout(nodes, edges, graphSeed, iterations, coolingRate);
     return { layoutNodes: laidOut, layoutEdges: edges };
-  }, [focalStock, nbrs, vecs, numPeers]);
+  }, [focalStock, nbrs, vecs, kPeer, iterations, coolingRate]);
+
+  // Create a stable color mapping for ALL sectors in the dataset (not just current graph)
+  // Ordered by average sector weight across all firms (highest to lowest)
+  const allSectorColorMap = useMemo(() => {
+    const orderedSectors = sectorOrderConfig.orderedSectors;
+    const distinctColors = sectorColorConfig.palette;
+    
+    const map: Record<string, string> = {};
+    orderedSectors.forEach((sector, i) => {
+      map[sector] = distinctColors[i % distinctColors.length];
+    });
+    
+    return map;
+  }, []);
+
+  const sectorsInCurrentGraph = useMemo(() => {
+    const sectorsInGraph = new Set<string>();
+    layoutNodes.forEach((n) => {
+      if (n.isFocal) return;
+      const stock = stocks.find((s) => s.isin === n.id);
+      if (stock) {
+        const sector = getDominantSector(stock);
+        if (sector && sector !== "Unknown") {
+          sectorsInGraph.add(sector);
+        }
+      }
+    });
+    return Array.from(sectorsInGraph).sort();
+  }, [layoutNodes, stocks]);
 
   const xs = layoutNodes.map((n) => n.x);
   const ys = layoutNodes.map((n) => n.y);
   const labels = layoutNodes.map((n) => n.label);
-  const colors = layoutNodes.map((n) => (n.isFocal ? "rgba(66, 133, 244, 1)" : "yellow"));
+  
+  const colors = layoutNodes.map((n) => {
+    if (n.isFocal) return "firebrick";
+    const stock = stocks.find((s) => s.isin === n.id);
+    if (!stock) return "grey";
+    const sector = getDominantSector(stock);
+    return allSectorColorMap[sector] || "grey";
+  });
+  
+  const sizes = useMemo(() => {
+    // Calculate sizes based on market cap of nodes in the graph only (matching R)
+    const logMcaps = layoutNodes.map((n) => {
+      const stock = stocks.find((s) => s.isin === n.id);
+      if (!stock) return 0;
+      return Math.log1p(stock.marketCapEUR || 0);
+    });
+    
+    const minLog = Math.min(...logMcaps);
+    const maxLog = Math.max(...logMcaps);
+    const range = maxLog - minLog;
+    
+    return layoutNodes.map((n, i) => {
+      const logMcap = logMcaps[i];
+      // Scale to [6, 18] range like R
+      const minSize = 6;
+      const maxSize = 18;
+      const size = range > 0 ? minSize + ((logMcap - minLog) / range) * (maxSize - minSize) : 10;
+      // Ensure focal is at least 16
+      return n.isFocal ? Math.max(size, 16) : size;
+    });
+  }, [layoutNodes, stocks]);
 
   const edgeTraces = layoutEdges
     .map((e) => {
       const src = layoutNodes.find((n) => n.id === e.source);
       const tgt = layoutNodes.find((n) => n.id === e.target);
       if (!src || !tgt) return null;
+      
+      const width = Math.max(0.5, e.weight * 1.5);
 
       return {
         x: [src.x, tgt.x],
         y: [src.y, tgt.y],
         mode: "lines",
         type: "scatter",
-        line: { width: 1, color: "#bbbbbb" },
-        hovertemplate: `distance = ${e.weight.toFixed(4)}<extra></extra>`,
+        line: { width, color: "rgba(150, 150, 150, 0.4)" },
+        hovertemplate: `similarity = ${e.weight.toFixed(4)}<extra></extra>`,
         showlegend: false,
       } as any;
     })
     .filter(Boolean);
 
-  const nodeTrace: any = {
-    x: xs,
-    y: ys,
-    mode: "markers+text",
-    type: "scatter",
-    text: labels,
-    textposition: "top center",
-    textfont: {
-      color: "#cccccc",
-      size: 10,
-    },
-    marker: {
-      size: 18,
-      color: colors,
-      opacity: 0.9,
-      line: { width: 1, color: "black" },
-    },
-    hovertemplate: "ISIN: %{text}<extra></extra>",
-    showlegend: false,
-  };
+  // Create pie chart shapes for each node using filled polygons
+  const pieTraces = useMemo(() => {
+    const shapes: any[] = [];
+    
+    layoutNodes.forEach((node) => {
+      const stock = stocks.find((s) => s.isin === node.id);
+      if (!stock) return;
+
+      const sectors = stock.sectors || {};
+      const sectorEntries = Object.entries(sectors)
+        .filter(([_, weight]) => weight > 0)
+        .sort((a, b) => b[1] - a[1]);
+
+      if (sectorEntries.length === 0) return;
+
+      const total = sectorEntries.reduce((sum, [_, w]) => sum + w, 0);
+      let currentAngle = -90; // Start from top
+      const pieSize = 0.08; // Radius in data coordinates
+      const centerX = node.x;
+      const centerY = node.y;
+
+      sectorEntries.forEach(([sectorName, weight]) => {
+        const fraction = weight / total;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + fraction * 360;
+
+        // Create filled polygon for pie slice using many points to approximate arc
+        const numPoints = Math.max(3, Math.ceil(fraction * 50)); // More points for larger slices
+        const points: { x: number; y: number }[] = [{ x: centerX, y: centerY }]; // Start at center
+
+        for (let i = 0; i <= numPoints; i++) {
+          const angle = (startAngle + (endAngle - startAngle) * i / numPoints) * Math.PI / 180;
+          const x = centerX + pieSize * Math.cos(angle);
+          const y = centerY + pieSize * Math.sin(angle);
+          points.push({ x, y });
+        }
+
+        // Close the path back to center
+        points.push({ x: centerX, y: centerY });
+
+        // Create shape as filled polygon
+        shapes.push({
+          type: 'path',
+          path: `M ${points.map(p => `${p.x},${p.y}`).join(' L ')} Z`,
+          fillcolor: allSectorColorMap[sectorName] || '#cccccc',
+          line: {
+            color: '#ffffff',
+            width: 0.5
+          },
+          opacity: 1,
+          xref: 'x',
+          yref: 'y'
+        });
+
+        currentAngle = endAngle;
+      });
+
+      // Add circle border around the entire pie chart
+      shapes.push({
+        type: 'circle',
+        xref: 'x',
+        yref: 'y',
+        x0: centerX - pieSize,
+        y0: centerY - pieSize,
+        x1: centerX + pieSize,
+        y1: centerY + pieSize,
+        line: {
+          color: node.isFocal ? 'firebrick' : '#333333',
+          width: node.isFocal ? 3 : 1.5
+        },
+        fillcolor: 'rgba(0,0,0,0)'
+      });
+    });
+
+    return shapes;
+  }, [layoutNodes, stocks, allSectorColorMap]);
+
+  // Create legend traces for dominant sectors (matching R legend)
+  const legendTraces = useMemo(() => {
+    return sectorsInCurrentGraph.map((sector) => ({
+      x: [null],
+      y: [null],
+      mode: "markers",
+      type: "scatter",
+      name: sector,
+      marker: {
+        size: 10,
+        color: allSectorColorMap[sector] || "grey",
+        line: { width: 1.5, color: "#333333" },
+      },
+      showlegend: true,
+    } as any));
+  }, [sectorsInCurrentGraph, allSectorColorMap]);
 
   return (
     <Box>
@@ -308,70 +548,251 @@ const SimilarStocks: React.FC = () => {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1.5fr 1fr 1fr" },
+          gridTemplateColumns: { xs: "1fr", sm: "1.5fr 1fr 1fr 1fr" },
+          gap: 1.5,
+          mb: 1,
+        }}
+      >
+        <Autocomplete
+          fullWidth
+          size="small"
+          value={stocks.find((s) => s.isin === focal) || null}
+          onChange={(_, newValue) => {
+            if (newValue) {
+              onStockSelect(newValue.isin);
+            }
+          }}
+          options={stocks}
+          getOptionLabel={(option) => `${option.isin} – ${option.name}`}
+          renderInput={(params) => (
+            <TextField {...params} label="Focal stock (ISIN)" />
+          )}
+          isOptionEqualToValue={(option, value) => option.isin === value.isin}
+        />
+
+        <FormControl fullWidth size="small">
+          <InputLabel>Features</InputLabel>
+          <Select
+            value={featureType}
+            label="Features"
+            onChange={(e) => setFeatureType(e.target.value as "both" | "sectors" | "industryGroups")}
+          >
+            <MenuItem value="both">Both</MenuItem>
+            <MenuItem value="sectors">Sectors only</MenuItem>
+            <MenuItem value="industryGroups">Industry Groups only</MenuItem>
+          </Select>
+        </FormControl>
+
+        <Box>
+          <Typography variant="caption" gutterBottom>
+            Neighbors (k): {k}
+          </Typography>
+          <Slider
+            value={k}
+            onChange={(_, val) => setK(val as number)}
+            min={5}
+            max={150}
+            step={1}
+            valueLabelDisplay="auto"
+            sx={{
+              color: 'grey.500',
+              '& .MuiSlider-thumb': {
+                bgcolor: 'grey.600',
+              },
+              '& .MuiSlider-track': {
+                bgcolor: 'grey.500',
+              },
+              '& .MuiSlider-rail': {
+                bgcolor: 'grey.300',
+              },
+            }}
+          />
+        </Box>
+
+        <Box>
+          <Typography variant="caption" gutterBottom>
+            Peer k: {kPeer}
+          </Typography>
+          <Slider
+            value={kPeer}
+            onChange={(_, val) => setKPeer(val as number)}
+            min={0}
+            max={10}
+            step={1}
+            marks
+            valueLabelDisplay="auto"
+            sx={{
+              color: 'grey.500',
+              '& .MuiSlider-thumb': {
+                bgcolor: 'grey.600',
+              },
+              '& .MuiSlider-track': {
+                bgcolor: 'grey.500',
+              },
+              '& .MuiSlider-rail': {
+                bgcolor: 'grey.300',
+              },
+            }}
+          />
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
           gap: 1.5,
           mb: 1.5,
         }}
       >
-        <FormControl fullWidth size="small">
-          <InputLabel>Focal stock (ISIN)</InputLabel>
-          <Select
-            value={focal}
-            label="Focal stock (ISIN)"
-            onChange={(e) => setFocal(e.target.value)}
-          >
-            {stocks.map((s) => (
-              <MenuItem key={s.isin} value={s.isin}>
-                {s.isin} – {s.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box>
+          <Typography variant="caption" gutterBottom>
+            Layout iterations: {iterations} (higher = better quality, slower)
+          </Typography>
+          <Slider
+            value={iterations}
+            onChange={(_, val) => setIterations(val as number)}
+            min={100}
+            max={1000}
+            step={50}
+            valueLabelDisplay="auto"
+            sx={{
+              color: 'grey.500',
+              '& .MuiSlider-thumb': {
+                bgcolor: 'grey.600',
+              },
+              '& .MuiSlider-track': {
+                bgcolor: 'grey.500',
+              },
+              '& .MuiSlider-rail': {
+                bgcolor: 'grey.300',
+              },
+            }}
+          />
+        </Box>
 
-        <TextField
-          size="small"
-          label="Number of neighbors (k)"
-          type="number"
-          value={k}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            if (!Number.isNaN(val) && val > 0) {
-              setK(val);
-            }
-          }}
-          inputProps={{ min: 1, max: 30 }}
-        />
+        <Box>
+          <Typography variant="caption" gutterBottom>
+            Cooling rate: {coolingRate.toFixed(1)} (higher = more movement)
+          </Typography>
+          <Slider
+            value={coolingRate}
+            onChange={(_, val) => setCoolingRate(val as number)}
+            min={0.5}
+            max={2.0}
+            step={0.1}
+            valueLabelDisplay="auto"
+            sx={{
+              color: 'grey.500',
+              '& .MuiSlider-thumb': {
+                bgcolor: 'grey.600',
+              },
+              '& .MuiSlider-track': {
+                bgcolor: 'grey.500',
+              },
+              '& .MuiSlider-rail': {
+                bgcolor: 'grey.300',
+              },
+            }}
+          />
+        </Box>
+      </Box>
 
-        <TextField
+      <Box sx={{ mb: 1.5 }}>
+        <ToggleButtonGroup
+          exclusive
           size="small"
-          label="Number of peers"
-          type="number"
-          value={numPeers}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            if (!Number.isNaN(val) && val > 0) {
-              setNumPeers(val);
-            }
-          }}
-          inputProps={{ min: 1, max: k }}
-        />
+          value={viewMode}
+          onChange={(_, val) => val && setViewMode(val as "network" | "barchart")}
+          fullWidth
+        >
+          <ToggleButton value="network">Network View</ToggleButton>
+          <ToggleButton value="barchart">Top 10 Sector Weights</ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       <Paper variant="outlined" sx={{ p: 1 }}>
-        <Plot
-          data={[...edgeTraces, nodeTrace]}
+        {viewMode === "network" ? (
+          <Plot
+          data={[...edgeTraces, ...legendTraces]}
           layout={
             {
-              height: 280,
-              margin: { l: 10, r: 10, t: 50, b: 10 },
-              xaxis: { visible: false },
-              yaxis: { visible: false },
-              showlegend: false,
+              height: 500,
+              margin: { l: 10, r: 150, t: 50, b: 10 },
+              xaxis: { visible: false, range: [-1.2, 1.2] },
+              yaxis: { visible: false, range: [-1.2, 1.2], scaleanchor: "x" },
+              showlegend: true,
+              legend: {
+                x: 1.02,
+                y: 1,
+                xanchor: "left",
+                yanchor: "top",
+                title: { text: "Sectors" },
+                bgcolor: "rgba(255, 255, 255, 0.8)",
+                bordercolor: "#999",
+                borderwidth: 1,
+              },
+              shapes: pieTraces,
             } as any
           }
           config={{ displayModeBar: false, responsive: true } as any}
           style={{ width: "100%" }}
         />
+        ) : (
+          <Plot
+            data={
+              (() => {
+                const allSectors = sectorOrderConfig.orderedSectors;
+                const top10 = nbrs.slice(0, 10);
+                
+                // Combine focal stock with top 10 neighbors
+                const allStocks = [focalStock, ...top10.map(n => n.stock)];
+                
+                // Create one trace per sector (stacked bars)
+                return allSectors.map((sector) => {
+                  return {
+                    x: allStocks.map((stock) => stock.sectors[sector] || 0),
+                    y: allStocks.map((stock) => stock.name),
+                    type: "bar",
+                    orientation: "h",
+                    name: sector,
+                    marker: {
+                      color: allSectorColorMap[sector] || "grey",
+                    },
+                    hovertemplate: `<b>${sector}</b>: %{x:.2f}%<extra></extra>`,
+                  } as any;
+                });
+              })() as any
+            }
+            layout={
+              {
+                barmode: "stack",
+                height: 500,
+                margin: { l: 180, r: 20, t: 40, b: 60 },
+                xaxis: {
+                  title: { text: "Weight (%)" },
+                  range: [0, 100],
+                },
+                yaxis: {
+                  autorange: "reversed",
+                },
+                showlegend: true,
+                legend: {
+                  x: 1.02,
+                  y: 1,
+                  xanchor: "left",
+                  yanchor: "top",
+                  title: { text: "Sectors" },
+                  bgcolor: "rgba(255, 255, 255, 0.8)",
+                  bordercolor: "#999",
+                  borderwidth: 1,
+                },
+              } as any
+            }
+            config={{ displayModeBar: false, responsive: true } as any}
+            style={{ width: "100%" }}
+          />
+        )}
       </Paper>
     </Box>
   );

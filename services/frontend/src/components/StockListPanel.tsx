@@ -16,6 +16,8 @@ import {
   Divider,
   Collapse,
   ListItemButton,
+  Button,
+  TextField,
 } from "@mui/material";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
@@ -32,6 +34,24 @@ interface StockListPanelProps {
   section?: "drilldown" | "lower";
   selectedStockIsin: string;
   onStockSelect: (isin: string) => void;
+}
+
+type SaveStateConfig = {
+  subset: string;
+  cutoffRange: number[];
+  sortOrder: SortOrder;
+  activeListType: "subset" | "sector";
+  highlightedStockIsin: string | null;
+  highlightedIG: string | null;
+  showIndustryGroups: boolean;
+  showWeightDistributions: boolean;
+  scatterSector: string;
+  sectorListFocus: string;
+};
+
+interface SavedState {
+  name: string;
+  config: SaveStateConfig;
 }
 
 // Ordered by average sector weight across all firms (highest to lowest)
@@ -365,16 +385,20 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
     [combinedStocks]
   );
 
-  const [subset, setSubset] = useState<string>("");
-  const [cutoffRange, setCutoffRange] = useState<number[]>([0, 100]);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
-  const [activeListType, setActiveListType] = useState<"subset" | "sector">("subset");
-  const [highlightedStockIsin, setHighlightedStockIsin] = useState<string | null>(null);
-  const [highlightedIG, setHighlightedIG] = useState<string | null>(null);
+ const [subset, setSubset] = useState<string>("");
+ const [cutoffRange, setCutoffRange] = useState<number[]>([0, 100]);
+ const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+ const [activeListType, setActiveListType] = useState<"subset" | "sector">("subset");
+ const [highlightedStockIsin, setHighlightedStockIsin] = useState<string | null>(null);
+ const [highlightedIG, setHighlightedIG] = useState<string | null>(null);
+  const [savedStates, setSavedStates] = useState<SavedState[]>([]);
+  const [stateName, setStateName] = useState<string>("");
+  const maxSavedStates = 4;
 
   const handleActiveListStockClick = (isin: string) => {
     setHighlightedIG(null);
     setHighlightedStockIsin((prev) => (prev === isin ? null : isin));
+    onStockSelect(isin);
   };
 
   // Keep histogram margins centralized so the slider aligns perfectly with the x-axis width
@@ -555,6 +579,46 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
   const [showIndustryGroups, setShowIndustryGroups] = useState<boolean>(true);
   const [showWeightDistributions, setShowWeightDistributions] =
     useState<boolean>(true);
+
+  const currentStateConfig: SaveStateConfig = {
+    subset,
+    cutoffRange,
+    sortOrder,
+    activeListType,
+    highlightedStockIsin,
+    highlightedIG,
+    showIndustryGroups,
+    showWeightDistributions,
+    scatterSector,
+    sectorListFocus,
+  };
+
+  const handleSaveState = () => {
+    const trimmed = stateName.trim().slice(0, 8);
+    if (!trimmed || savedStates.length >= maxSavedStates) return;
+    setSavedStates((prev) => [
+      ...prev,
+      {
+        name: trimmed,
+        config: { ...currentStateConfig, cutoffRange: [...currentStateConfig.cutoffRange] },
+      },
+    ]);
+    setStateName("");
+  };
+
+  const handleLoadState = (state: SavedState) => {
+    const cfg = state.config;
+    setSubset(cfg.subset);
+    setCutoffRange(cfg.cutoffRange);
+    setSortOrder(cfg.sortOrder);
+    setActiveListType(cfg.activeListType);
+    setHighlightedStockIsin(cfg.highlightedStockIsin);
+    setHighlightedIG(cfg.highlightedIG);
+    setShowIndustryGroups(cfg.showIndustryGroups);
+    setShowWeightDistributions(cfg.showWeightDistributions);
+    setScatterSector(cfg.scatterSector);
+    setSectorListFocus(cfg.sectorListFocus);
+  };
 
   const currentBenchmark = useMemo(
     () =>
@@ -787,6 +851,45 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
             >
               Drill-Down from Sectors to Stocks
             </Typography>
+
+            <Box
+              sx={{
+                backgroundColor: "grey.100",
+                borderRadius: 1,
+                p: 1,
+                mb: 1,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                alignItems: "center",
+              }}
+            >
+              <TextField
+                size="small"
+                label="State name"
+                value={stateName}
+                onChange={(e) => setStateName(e.target.value)}
+                inputProps={{ maxLength: 8 }}
+              />
+              <Button
+                variant="contained"
+                size="small"
+                disabled={!stateName.trim() || savedStates.length >= maxSavedStates}
+                onClick={handleSaveState}
+              >
+                Save state
+              </Button>
+              {savedStates.map((state) => (
+                <Button
+                  key={state.name}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleLoadState(state)}
+                >
+                  {state.name}
+                </Button>
+              ))}
+            </Box>
 
             <List
               dense

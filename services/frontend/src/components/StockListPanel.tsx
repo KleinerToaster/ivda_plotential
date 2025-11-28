@@ -373,8 +373,12 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
   );
 
   const [subset, setSubset] = useState<string>("");
-  const [cutoff, setCutoff] = useState<number>(50);
+  const [cutoffRange, setCutoffRange] = useState<number[]>([0, 100]);
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [activeListType, setActiveListType] = useState<"subset" | "sector">("subset");
+
+  // Keep histogram margins centralized so the slider aligns perfectly with the x-axis width
+  const histogramMargin = useMemo(() => ({ l: 16, r: 12, t: 5, b: 25 }), []);
 
   const subsets = useMemo(
     () => Array.from(new Set(stocksForSubsetList.map((s) => s.subset))).sort(),
@@ -384,6 +388,7 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
   useEffect(() => {
     if (!subset && subsets.length > 0) {
       setSubset(subsets[0]);
+      setActiveListType("subset");
     }
   }, [subsets, subset]);
 
@@ -392,16 +397,63 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
     [stocksForSubsetList, subset]
   );
 
+  const [sectorListFocus, setSectorListFocus] = useState<string>(
+    () => allSectorNames[0] ?? ""
+  );
+
+  const sectorStockList = useMemo(() => {
+    if (!sectorListFocus) return [];
+    return combinedStocks
+      .map((stock) => ({
+        isin: stock.isin,
+        name: stock.name,
+        percentage: stock.sectors[sectorListFocus] ?? 0,
+      }))
+      .filter((entry) => entry.percentage > 0)
+      .sort((a, b) => b.percentage - a.percentage);
+  }, [combinedStocks, sectorListFocus]);
+
   const filteredStocks = useMemo(() => {
-    const aboveCutoff = subsetStocks.filter((s) => s.percentage >= cutoff);
-    return [...aboveCutoff].sort((a, b) =>
+    const [lowerBound, upperBound] = cutoffRange;
+    const withinBounds = subsetStocks.filter(
+      (s) => s.percentage >= lowerBound && s.percentage <= upperBound
+    );
+    return [...withinBounds].sort((a, b) =>
       sortOrder === "asc"
         ? a.percentage - b.percentage
         : b.percentage - a.percentage
     );
-  }, [subsetStocks, cutoff, sortOrder]);
+  }, [subsetStocks, cutoffRange, sortOrder]);
+
+  const filteredSectorStocks = useMemo(() => {
+    const [lowerBound, upperBound] = cutoffRange;
+    const withinBounds = sectorStockList.filter(
+      (s) => s.percentage >= lowerBound && s.percentage <= upperBound
+    );
+    return [...withinBounds].sort((a, b) =>
+      sortOrder === "asc"
+        ? a.percentage - b.percentage
+        : b.percentage - a.percentage
+    );
+  }, [sectorStockList, cutoffRange, sortOrder]);
 
   const subsetWeights = subsetStocks.map((s) => s.percentage);
+
+  const activeListItems = useMemo(() => {
+    if (activeListType === "sector") {
+      return filteredSectorStocks.map((stock) => ({
+        id: stock.isin,
+        name: stock.name,
+        percentage: stock.percentage,
+      }));
+    }
+
+    return filteredStocks.map((stock, idx) => ({
+      id: `${stock.name}-${idx}`,
+      name: stock.name,
+      percentage: stock.percentage,
+    }));
+  }, [activeListType, sectorStockList, filteredStocks, filteredSectorStocks]);
 
   const [expandedSectors, setExpandedSectors] = useState<Set<string>>(new Set());
   const [scatterSector, setScatterSector] = useState<string>(
@@ -411,6 +463,8 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
   const handleToggleSector = (sector: string) => {
     // Set this sector as the x-axis for the scatterplot
     setScatterSector(sector);
+    setSectorListFocus(sector);
+    setActiveListType("sector");
     
     setExpandedSectors((prev) => {
       const newSet = new Set(prev);
@@ -432,6 +486,12 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
       setScatterSector(allSectorNames[0]);
     }
   }, [scatterSector, allSectorNames]);
+
+  useEffect(() => {
+    if (!sectorListFocus && allSectorNames.length) {
+      setSectorListFocus(allSectorNames[0]);
+    }
+  }, [sectorListFocus, allSectorNames]);
 
   useEffect(() => {
     if (!scatterIG && allIGNames.length) {
@@ -681,6 +741,14 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
   if (section === "drilldown") {
     const subsetLabel =
       subset || (subsets.length ? subsets[0] : "No industry groups");
+    const activeListHeader =
+      activeListType === "sector"
+        ? sectorListFocus || "Selected sector"
+        : subsetLabel;
+    const emptyListMessage =
+      activeListType === "sector"
+        ? `No firms with exposure to ${activeListHeader} between ${cutoffRange[0]}% and ${cutoffRange[1]}%.`
+        : `No stocks in "${activeListHeader}" between ${cutoffRange[0]}% and ${cutoffRange[1]}%.`;
 
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -746,7 +814,10 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
                       {row.groups.map((group) => (
                         <ListItemButton
                           key={group}
-                          onClick={() => setSubset(group)}
+                          onClick={() => {
+                            setSubset(group);
+                            setActiveListType("subset");
+                          }}
                           sx={{
                             pl: 4,
                             py: 0.5,
@@ -801,40 +872,171 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
                       alignItems: "center",
                     }}
                   >
-                    <Box>
-                      <Typography variant="caption" gutterBottom>
-                        Cutoff: {cutoff}%
-                      </Typography>
-                      <Slider
-                        value={cutoff}
-                        onChange={(_, val) => setCutoff(val as number)}
-                        min={0}
-                        max={100}
-                        step={1}
-                        marks
-                        valueLabelDisplay="auto"
-                        valueLabelFormat={(val) => `${val}%`}
+                    <Box sx={{ position: "relative" }}>
+                      <Typography
+                        variant="caption"
+                        gutterBottom
                         sx={{
-                          color: 'grey.500',
-                          '& .MuiSlider-thumb': {
-                            bgcolor: 'grey.600',
-                          },
-                          '& .MuiSlider-track': {
-                            bgcolor: 'grey.500',
-                          },
-                          '& .MuiSlider-rail': {
-                            bgcolor: 'grey.300',
-                          },
+                          display: "block",
+                          mb: 0.5,
+                          textAlign: "center",
+                          width: `calc(100% - ${histogramMargin.l + histogramMargin.r}px)`,
+                          ml: `${histogramMargin.l}px`,
                         }}
-                      />
+                      >
+                        Weight range: {cutoffRange[0]}% – {cutoffRange[1]}%
+                      </Typography>
+                      <Box sx={{ position: "relative", height: 70 }}>
+                        <Plot
+                          data={
+                            [
+                              {
+                                x: subsetWeights,
+                                type: "histogram",
+                                orientation: "v",
+                                xbins: { start: 0, end: 100, size: 5 },
+                                marker: {
+                                  opacity: 0.6,
+                                  color: "rgba(95, 132, 187, 0.7)",
+                                  line: {
+                                    color: "rgba(0, 102, 255, 0.7)",
+                                    width: 1.5,
+                                  },
+                                },
+                                hovertemplate:
+                                  "%{x}–%{x+5}%: %{y} stocks<extra></extra>",
+                              },
+                            ] as any
+                          }
+                              layout={
+                            {
+                              height: 60,
+                              margin: histogramMargin,
+                              xaxis: {
+                                range: [0, 100],
+                                tickfont: { size: 9 },
+                                gridcolor: "#d0d0d0",
+                                linecolor: "#666666",
+                                zerolinecolor: "#666666",
+                                showline: true,
+                                tickvals: [0, 25, 50, 75, 100],
+                                ticktext: ["0%", "25%", "50%", "75%", "100%"],
+                              },
+                              yaxis: { 
+                                showticklabels: false,
+                                tickfont: { size: 9 },
+                              gridcolor: "#d0d0d0",
+                              linecolor: "#666666",
+                              zerolinecolor: "#666666",
+                              showline: true,
+                              },
+                              shapes: [
+                                {
+                                  type: "rect",
+                                  xref: "x",
+                                  yref: "paper",
+                                  x0: cutoffRange[0],
+                                  x1: cutoffRange[1],
+                                  y0: 0,
+                                  y1: 1,
+                                  fillcolor: "rgba(120, 120, 120, 0.12)",
+                                  line: { width: 0 },
+                                  layer: "below",
+                                },
+                                {
+                                  type: "line",
+                                  xref: "x",
+                                  yref: "paper",
+                                  x0: cutoffRange[0],
+                                  x1: cutoffRange[0],
+                                  y0: 0,
+                                  y1: 1,
+                                  line: {
+                                    width: 2,
+                                    dash: "solid",
+                                    color: "#007a7a",
+                                  },
+                                },
+                                {
+                                  type: "line",
+                                  xref: "x",
+                                  yref: "paper",
+                                  x0: cutoffRange[1],
+                                  x1: cutoffRange[1],
+                                  y0: 0,
+                                  y1: 1,
+                                  line: {
+                                    width: 2,
+                                    dash: "solid",
+                                    color: "#007a7a",
+                                  },
+                                },
+                              ],
+                            } as any
+                          }
+                          config={{ displayModeBar: false, responsive: true, staticPlot: true } as any}
+                          style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}
+                        />
+                        <Slider
+                          value={cutoffRange}
+                          onChange={(_, val) => setCutoffRange(val as number[])}
+                          min={0}
+                          max={100}
+                          step={1}
+                          marks
+                          disableSwap
+                          valueLabelDisplay="auto"
+                          valueLabelFormat={(val) => `${val}%`}
+                          sx={{
+                            position: "absolute",
+                            bottom: -6,
+                            left: histogramMargin.l,
+                            right: "auto",
+                            width: `calc(100% - ${histogramMargin.l + histogramMargin.r}px)`,
+                            height: 4,
+                            color: 'grey.600',
+                            '& .MuiSlider-thumb': {
+                              bgcolor: '#ffffff',
+                              width: 16,
+                              height: 16,
+                              border: '2px solid #555555',
+                              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.25)',
+                            },
+                            '& .MuiSlider-track': {
+                              bgcolor: '#666666',
+                              height: 4,
+                              borderRadius: 9999,
+                            },
+                            '& .MuiSlider-rail': {
+                              bgcolor: '#d6d6d6',
+                              opacity: 1,
+                              height: 4,
+                              borderRadius: 9999,
+                            },
+                            '& .MuiSlider-mark': {
+                              display: 'none',
+                            },
+                          }}
+                        />
+                      </Box>
                     </Box>
 
                     <ToggleButtonGroup
+                      orientation="vertical"
                       exclusive
                       size="small"
                       value={sortOrder}
                       onChange={(_, val) => val && setSortOrder(val)}
-                      fullWidth
+                      sx={{
+                        width: 72,
+                        justifySelf: "start",
+                        '& .MuiToggleButton-root': {
+                          py: 0.4,
+                          px: 1,
+                          fontSize: "0.75rem",
+                          lineHeight: 1.2,
+                        },
+                      }}
                     >
                       <ToggleButton value="asc">Asc</ToggleButton>
                       <ToggleButton value="desc">Desc</ToggleButton>
@@ -843,12 +1045,25 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
 
                   <Paper
                     variant="outlined"
-                    sx={{ maxHeight: 420, overflowY: "auto" }}
+                    sx={{
+                      maxHeight: 420,
+                      overflowY: "auto",
+                      width: { xs: "100%", md: "90%" },
+                    }}
                   >
                     <List dense disablePadding>
-                      <ListItem sx={{ bgcolor: "#f5f5f5", py: 1 }}>
+                      <ListItem
+                        sx={{
+                          bgcolor: "#f5f5f5",
+                          py: 1,
+                          position: "sticky",
+                          top: 0,
+                          zIndex: 2,
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                        }}
+                      >
                         <ListItemText
-                          primary={`Stocks in "${subsetLabel}"`}
+                          primary={activeListHeader}
                           primaryTypographyProps={{
                             variant: "subtitle2",
                             fontWeight: 600,
@@ -856,96 +1071,42 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
                         />
                       </ListItem>
                       <Divider />
-                      {filteredStocks.length === 0 && (
+                      {activeListItems.length === 0 ? (
                         <ListItem>
                           <ListItemText
-                            primary={`No stocks in "${subsetLabel}" above ${cutoff}%.`}
+                            primary={emptyListMessage}
                             primaryTypographyProps={{
                               variant: "body2",
                               color: "text.secondary",
                             }}
                           />
                         </ListItem>
+                      ) : (
+                        activeListItems.map((stock, idx) => (
+                          <React.Fragment key={`${stock.id ?? stock.name}-${idx}`}>
+                            {idx > 0 && <Divider />}
+                            <ListItem
+                              secondaryAction={
+                                <Typography variant="body2">
+                                  {stock.percentage.toFixed(1)}%
+                                </Typography>
+                              }
+                            >
+                              <ListItemText
+                                primary={stock.name}
+                                primaryTypographyProps={{
+                                  variant: "body2",
+                                }}
+                              />
+                            </ListItem>
+                          </React.Fragment>
+                        ))
                       )}
-
-                      {filteredStocks.map((stock, idx) => (
-                        <React.Fragment key={`${stock.name}-${idx}`}>
-                          {idx > 0 && <Divider />}
-                          <ListItem
-                            secondaryAction={
-                              <Typography variant="body2">
-                                {stock.percentage.toFixed(1)}%
-                              </Typography>
-                            }
-                          >
-                            <ListItemText 
-                              primary={stock.name}
-                              primaryTypographyProps={{
-                                variant: "body2",
-                              }}
-                            />
-                          </ListItem>
-                        </React.Fragment>
-                      ))}
                     </List>
                   </Paper>
                 </Box>
 
                 <Box>
-                  <Paper variant="outlined" sx={{ p: 1, mb: 2 }}>
-                    <Plot
-                      data={
-                        [
-                          {
-                            y: subsetWeights,
-                            type: "histogram",
-                            orientation: "h",
-                            ybins: { start: 0, end: 100, size: 5 },
-                            marker: {
-                              opacity: 0.6,
-                              color: "rgba(95, 132, 187, 0.7)",
-                              line: {
-                                color: "rgba(0, 102, 255, 0.7)",
-                                width: 1.5,
-                              },
-                            },
-                            hovertemplate:
-                              "%{y}–%{y+5}%: %{x} stocks<extra></extra>",
-                          },
-                        ] as any
-                      }
-                      layout={
-                        {
-                          height: 160,
-                          margin: { l: 60, r: 15, t: 0, b: 25 },
-                          xaxis: { title: { text: "Count" } },
-                          yaxis: {
-                            range: [0, 100],
-                            title: { text: "Top IG weight (%)" },
-                          },
-                          shapes: [
-                            {
-                              type: "line",
-                              xref: "paper",
-                              yref: "y",
-                              x0: 0,
-                              x1: 1,
-                              y0: cutoff,
-                              y1: cutoff,
-                              line: {
-                                width: 2,
-                                dash: "dash",
-                                color: "deeppink",
-                              },
-                            },
-                          ],
-                        } as any
-                      }
-                      config={{ displayModeBar: false, responsive: true } as any}
-                      style={{ width: "100%" }}
-                    />
-                  </Paper>
-
                   <Plot
                     data={
                       Object.entries(scatterData).map(([ig, points], idx) => ({

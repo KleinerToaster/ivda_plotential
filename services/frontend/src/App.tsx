@@ -1,9 +1,20 @@
-import React, { useState } from "react";
-import { AppBar, Toolbar, Typography, Box, Divider, Button } from "@mui/material";
+import React, { useRef, useState } from "react";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  Divider,
+  Button,
+  TextField,
+} from "@mui/material";
 import "./App.css";
 
 import WeightDifferenceView from "./components/WeightDifferenceView";
-import StockListPanel from "./components/StockListPanel";
+import StockListPanel, {
+  SavedState,
+  StockListPanelHandle,
+} from "./components/StockListPanel";
 import SimilarStocks from "./components/SimilarStocks";
 import DataValidityOverlay from "./components/DataValidityOverlay";
 import PortfolioBuilderOverlay from "./components/PortfolioBuilderOverlay";
@@ -20,6 +31,26 @@ function App() {
     isin: s.isin,
     name: s.name,
   }));
+  const drilldownRef = useRef<StockListPanelHandle | null>(null);
+  const [stateName, setStateName] = useState("");
+  const [savedStates, setSavedStates] = useState<SavedState[]>([]);
+  const maxSavedStates = 4;
+
+  const handleSaveState = () => {
+    const trimmed = stateName.trim().slice(0, 8);
+    if (!trimmed || savedStates.length >= maxSavedStates) return;
+    const config = drilldownRef.current?.getStateConfig();
+    if (!config) return;
+    setSavedStates((prev) => [...prev, { name: trimmed, config }]);
+    setStateName("");
+  };
+
+  const handleLoadState = (state: SavedState) => {
+    drilldownRef.current?.applyState(state.config);
+    if (state.config.highlightedStockIsin) {
+      setSelectedStockIsin(state.config.highlightedStockIsin);
+    }
+  };
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -29,26 +60,77 @@ function App() {
           backgroundColor: "rgba(0, 0, 0, 0.7)",
         }}
       >
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Toolbar sx={{ justifyContent: "space-between" }}>
+          <Typography variant="h6" sx={{ flexShrink: 0 }}>
             Plotential
           </Typography>
-          <Button
-            color="inherit"
-            size="small"
-            onClick={() => setShowPortfolioBuilder(true)}
-            sx={{ border: "1px solid white", ml: 2 }}
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 1,
+              flexWrap: "wrap",
+            }}
           >
-            Portfolio Builder
-          </Button>
-          <Button
-            color="inherit"
-            size="small"
-            onClick={() => setShowOverlay(true)}
-            sx={{ border: "1px solid white", ml: 2 }}
+            <TextField
+              value={stateName}
+              onChange={(e) => setStateName(e.target.value)}
+              size="small"
+              label=""
+              inputProps={{ maxLength: 8 }}
+              sx={{ width: 150, bgcolor: "white", borderRadius: 1 }}
+            />
+            <Button
+              color="inherit"
+              size="small"
+              variant="outlined"
+              sx={{ border: "1px solid white" }}
+              onClick={handleSaveState}
+              disabled={!stateName.trim() || savedStates.length >= maxSavedStates}
+            >
+              Save state
+            </Button>
+            {savedStates.length === 0 ? (
+              <Typography variant="caption" color="grey.300">
+                No saved states
+              </Typography>
+            ) : (
+              savedStates.map((state) => (
+                <Button
+                  key={state.name}
+                  color="inherit"
+                  size="small"
+                  variant="outlined"
+                  sx={{ border: "1px solid white" }}
+                  onClick={() => handleLoadState(state)}
+                >
+                  {state.name}
+                </Button>
+              ))
+            )}
+          </Box>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 1, ml: 1 }}
           >
-            Data Validity
-          </Button>
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => setShowPortfolioBuilder(true)}
+              sx={{ border: "1px solid white" }}
+            >
+              Portfolio Builder
+            </Button>
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => setShowOverlay(true)}
+              sx={{ border: "1px solid white" }}
+            >
+              Data Validity
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
       <DataValidityOverlay
@@ -86,12 +168,13 @@ function App() {
           }}
         >
           <Box sx={{ mb: 1 }}>
-            <Box id="drilldown-section">
-              <StockListPanel 
-                section="drilldown" 
-                selectedStockIsin={selectedStockIsin}
-                onStockSelect={setSelectedStockIsin}
-              />
+              <Box id="drilldown-section">
+                <StockListPanel
+                  ref={drilldownRef}
+                  section="drilldown"
+                  selectedStockIsin={selectedStockIsin}
+                  onStockSelect={setSelectedStockIsin}
+                />
             </Box>
           </Box>
 

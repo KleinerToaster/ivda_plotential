@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from "react";
 import {
   Box,
   Typography,
@@ -16,8 +22,6 @@ import {
   Divider,
   Collapse,
   ListItemButton,
-  Button,
-  TextField,
 } from "@mui/material";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
@@ -36,7 +40,7 @@ interface StockListPanelProps {
   onStockSelect: (isin: string) => void;
 }
 
-type SaveStateConfig = {
+export type SaveStateConfig = {
   subset: string;
   cutoffRange: number[];
   sortOrder: SortOrder;
@@ -49,9 +53,14 @@ type SaveStateConfig = {
   sectorListFocus: string;
 };
 
-interface SavedState {
+export type SavedState = {
   name: string;
   config: SaveStateConfig;
+};
+
+export interface StockListPanelHandle {
+  getStateConfig: () => SaveStateConfig;
+  applyState: (config: SaveStateConfig) => void;
 }
 
 // Ordered by average sector weight across all firms (highest to lowest)
@@ -286,7 +295,8 @@ const mean = (vals: number[]): number => {
   return valid.reduce((a, b) => a + b, 0) / valid.length;
 };
 
-const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockIsin, onStockSelect }) => {
+const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
+  ({ section, selectedStockIsin, onStockSelect }, ref) => {
   const combinedStocks = COMBINED_STOCKS;
 
   // Sector color palette loaded from shared config
@@ -391,10 +401,6 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
  const [activeListType, setActiveListType] = useState<"subset" | "sector">("subset");
  const [highlightedStockIsin, setHighlightedStockIsin] = useState<string | null>(null);
  const [highlightedIG, setHighlightedIG] = useState<string | null>(null);
-  const [savedStates, setSavedStates] = useState<SavedState[]>([]);
-  const [stateName, setStateName] = useState<string>("");
-  const maxSavedStates = 4;
-
   const handleActiveListStockClick = (isin: string) => {
     setHighlightedIG(null);
     setHighlightedStockIsin((prev) => (prev === isin ? null : isin));
@@ -580,45 +586,32 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
   const [showWeightDistributions, setShowWeightDistributions] =
     useState<boolean>(true);
 
-  const currentStateConfig: SaveStateConfig = {
-    subset,
-    cutoffRange,
-    sortOrder,
-    activeListType,
-    highlightedStockIsin,
-    highlightedIG,
-    showIndustryGroups,
-    showWeightDistributions,
-    scatterSector,
-    sectorListFocus,
-  };
-
-  const handleSaveState = () => {
-    const trimmed = stateName.trim().slice(0, 8);
-    if (!trimmed || savedStates.length >= maxSavedStates) return;
-    setSavedStates((prev) => [
-      ...prev,
-      {
-        name: trimmed,
-        config: { ...currentStateConfig, cutoffRange: [...currentStateConfig.cutoffRange] },
-      },
-    ]);
-    setStateName("");
-  };
-
-  const handleLoadState = (state: SavedState) => {
-    const cfg = state.config;
-    setSubset(cfg.subset);
-    setCutoffRange(cfg.cutoffRange);
-    setSortOrder(cfg.sortOrder);
-    setActiveListType(cfg.activeListType);
-    setHighlightedStockIsin(cfg.highlightedStockIsin);
-    setHighlightedIG(cfg.highlightedIG);
-    setShowIndustryGroups(cfg.showIndustryGroups);
-    setShowWeightDistributions(cfg.showWeightDistributions);
-    setScatterSector(cfg.scatterSector);
-    setSectorListFocus(cfg.sectorListFocus);
-  };
+  useImperativeHandle(ref, () => ({
+    getStateConfig: () => ({
+      subset,
+      cutoffRange,
+      sortOrder,
+      activeListType,
+      highlightedStockIsin,
+      highlightedIG,
+      showIndustryGroups,
+      showWeightDistributions,
+      scatterSector,
+      sectorListFocus,
+    }),
+    applyState: (cfg: SaveStateConfig) => {
+      setSubset(cfg.subset);
+      setCutoffRange(cfg.cutoffRange);
+      setSortOrder(cfg.sortOrder);
+      setActiveListType(cfg.activeListType);
+      setHighlightedStockIsin(cfg.highlightedStockIsin);
+      setHighlightedIG(cfg.highlightedIG);
+      setShowIndustryGroups(cfg.showIndustryGroups);
+      setShowWeightDistributions(cfg.showWeightDistributions);
+      setScatterSector(cfg.scatterSector);
+      setSectorListFocus(cfg.sectorListFocus);
+    },
+  }));
 
   const currentBenchmark = useMemo(
     () =>
@@ -851,45 +844,6 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
             >
               Drill-Down from Sectors to Stocks
             </Typography>
-
-            <Box
-              sx={{
-                backgroundColor: "grey.100",
-                borderRadius: 1,
-                p: 1,
-                mb: 1,
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 1,
-                alignItems: "center",
-              }}
-            >
-              <TextField
-                size="small"
-                label="State name"
-                value={stateName}
-                onChange={(e) => setStateName(e.target.value)}
-                inputProps={{ maxLength: 8 }}
-              />
-              <Button
-                variant="contained"
-                size="small"
-                disabled={!stateName.trim() || savedStates.length >= maxSavedStates}
-                onClick={handleSaveState}
-              >
-                Save state
-              </Button>
-              {savedStates.map((state) => (
-                <Button
-                  key={state.name}
-                  variant="outlined"
-                  size="small"
-                  onClick={() => handleLoadState(state)}
-                >
-                  {state.name}
-                </Button>
-              ))}
-            </Box>
 
             <List
               dense
@@ -1463,6 +1417,6 @@ const StockListPanel: React.FC<StockListPanelProps> = ({ section, selectedStockI
       />
     </Box>
   );
-};
+});
 
 export default StockListPanel;

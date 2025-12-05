@@ -1,15 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
   Box,
-  Typography,
-  Slider,
-  FormControl,
-  MenuItem,
-  Select,
-  InputLabel,
   Paper,
-  Autocomplete,
-  TextField,
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
@@ -159,9 +151,22 @@ const runLayout = (nodesIn: Node[], edges: Edge[], seed: number = 123, iteration
 interface SimilarStocksProps {
   selectedStockIsin: string;
   onStockSelect: (isin: string) => void;
+  featureType: "both" | "sectors" | "industryGroups";
+  k: number;
+  kPeer: number;
+  iterations: number;
+  coolingRate: number;
 }
 
-const SimilarStocks: React.FC<SimilarStocksProps> = ({ selectedStockIsin, onStockSelect }) => {
+const SimilarStocks: React.FC<SimilarStocksProps> = ({ 
+  selectedStockIsin, 
+  onStockSelect,
+  featureType,
+  k,
+  kPeer,
+  iterations,
+  coolingRate
+}) => {
   const stocks = rawStockData as unknown as CombinedStock[];
 
   const sectorKeys = useMemo(() => {
@@ -186,11 +191,6 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({ selectedStockIsin, onStoc
   );
 
   const focal = selectedStockIsin || stocks[0]?.isin || "";
-  const [k, setK] = useState<number>(20);
-  const [kPeer, setKPeer] = useState<number>(4);
-  const [featureType, setFeatureType] = useState<"both" | "sectors" | "industryGroups">("both");
-  const [iterations, setIterations] = useState<number>(500);
-  const [coolingRate, setCoolingRate] = useState<number>(1.0);
   const [viewMode, setViewMode] = useState<"network" | "barchart">("network");
 
   const vecs = useMemo(() => {
@@ -541,163 +541,6 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({ selectedStockIsin, onStoc
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ mb: 1 }}>
-        Find Similar Stocks (force-directed kNN graph)
-      </Typography>
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1.5fr 1fr 1fr 1fr" },
-          gap: 1.5,
-          mb: 1,
-        }}
-      >
-        <Autocomplete
-          fullWidth
-          size="small"
-          value={stocks.find((s) => s.isin === focal) || null}
-          onChange={(_, newValue) => {
-            if (newValue) {
-              onStockSelect(newValue.isin);
-            }
-          }}
-          options={stocks}
-          getOptionLabel={(option) => `${option.isin} – ${option.name}`}
-          renderInput={(params) => (
-            <TextField {...params} label="Focal stock (ISIN)" />
-          )}
-          isOptionEqualToValue={(option, value) => option.isin === value.isin}
-        />
-
-        <FormControl fullWidth size="small">
-          <InputLabel>Features</InputLabel>
-          <Select
-            value={featureType}
-            label="Features"
-            onChange={(e) => setFeatureType(e.target.value as "both" | "sectors" | "industryGroups")}
-          >
-            <MenuItem value="both">Both</MenuItem>
-            <MenuItem value="sectors">Sectors only</MenuItem>
-            <MenuItem value="industryGroups">Industry Groups only</MenuItem>
-          </Select>
-        </FormControl>
-
-        <Box>
-          <Typography variant="caption" gutterBottom>
-            Neighbors (k): {k}
-          </Typography>
-          <Slider
-            value={k}
-            onChange={(_, val) => setK(val as number)}
-            min={5}
-            max={150}
-            step={1}
-            valueLabelDisplay="auto"
-            sx={{
-              color: 'grey.500',
-              '& .MuiSlider-thumb': {
-                bgcolor: 'grey.600',
-              },
-              '& .MuiSlider-track': {
-                bgcolor: 'grey.500',
-              },
-              '& .MuiSlider-rail': {
-                bgcolor: 'grey.300',
-              },
-            }}
-          />
-        </Box>
-
-        <Box>
-          <Typography variant="caption" gutterBottom>
-            Peer k: {kPeer}
-          </Typography>
-          <Slider
-            value={kPeer}
-            onChange={(_, val) => setKPeer(val as number)}
-            min={0}
-            max={10}
-            step={1}
-            marks
-            valueLabelDisplay="auto"
-            sx={{
-              color: 'grey.500',
-              '& .MuiSlider-thumb': {
-                bgcolor: 'grey.600',
-              },
-              '& .MuiSlider-track': {
-                bgcolor: 'grey.500',
-              },
-              '& .MuiSlider-rail': {
-                bgcolor: 'grey.300',
-              },
-            }}
-          />
-        </Box>
-      </Box>
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          gap: 1.5,
-          mb: 1.5,
-        }}
-      >
-        <Box>
-          <Typography variant="caption" gutterBottom>
-            Layout iterations: {iterations} (higher = better quality, slower)
-          </Typography>
-          <Slider
-            value={iterations}
-            onChange={(_, val) => setIterations(val as number)}
-            min={100}
-            max={1000}
-            step={50}
-            valueLabelDisplay="auto"
-            sx={{
-              color: 'grey.500',
-              '& .MuiSlider-thumb': {
-                bgcolor: 'grey.600',
-              },
-              '& .MuiSlider-track': {
-                bgcolor: 'grey.500',
-              },
-              '& .MuiSlider-rail': {
-                bgcolor: 'grey.300',
-              },
-            }}
-          />
-        </Box>
-
-        <Box>
-          <Typography variant="caption" gutterBottom>
-            Cooling rate: {coolingRate.toFixed(1)} (higher = more movement)
-          </Typography>
-          <Slider
-            value={coolingRate}
-            onChange={(_, val) => setCoolingRate(val as number)}
-            min={0.5}
-            max={2.0}
-            step={0.1}
-            valueLabelDisplay="auto"
-            sx={{
-              color: 'grey.500',
-              '& .MuiSlider-thumb': {
-                bgcolor: 'grey.600',
-              },
-              '& .MuiSlider-track': {
-                bgcolor: 'grey.500',
-              },
-              '& .MuiSlider-rail': {
-                bgcolor: 'grey.300',
-              },
-            }}
-          />
-        </Box>
-      </Box>
-
       <Box sx={{ mb: 1.5 }}>
         <ToggleButtonGroup
           exclusive

@@ -1,15 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  ToggleButtonGroup,
-  ToggleButton,
-  Autocomplete,
-  TextField,
 } from "@mui/material";
 import Plot from "react-plotly.js";
 import rawStockData from "../stock_data.json";
@@ -31,6 +23,18 @@ const STOCKS = rawStockData as unknown as CombinedStock[];
 interface WeightDifferenceViewProps {
   selectedStockIsin: string;
   onStockSelect: (isin: string) => void;
+  portfolio2Key: string;
+  setPortfolio2Key: (key: string) => void;
+  benchmarkId: string;
+  setBenchmarkId: (id: string) => void;
+  benchmark2Id: string;
+  setBenchmark2Id: (id: string) => void;
+  baseline: string;
+  setBaseline: (baseline: string) => void;
+  level: Level;
+  setLevel: (level: Level) => void;
+  categoryFilter: CategoryFilter;
+  setCategoryFilter: (filter: CategoryFilter) => void;
 }
 
 type Level = "Sectors" | "Industry Groups";
@@ -63,14 +67,23 @@ type BenchmarkOption = {
   ref?: CountryRegionMarketBenchmark;
 };
 
-const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({ selectedStockIsin, onStockSelect }) => {
+const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({ 
+  selectedStockIsin, 
+  onStockSelect,
+  portfolio2Key,
+  setPortfolio2Key,
+  benchmarkId,
+  setBenchmarkId,
+  benchmark2Id,
+  setBenchmark2Id,
+  baseline,
+  setBaseline,
+  level,
+  setLevel,
+  categoryFilter,
+  setCategoryFilter,
+}) => {
   const hasData = STOCKS.length > 0;
-
-  const [portfolio2Key, setPortfolio2Key] = useState<string>("");
-
-  const [level, setLevel] = useState<Level>("Sectors");
-  const [categoryFilter, setCategoryFilter] =
-    useState<CategoryFilter>("All");
 
   const benchmarkOptions: BenchmarkOption[] = useMemo(() => {
     const opts: BenchmarkOption[] = [
@@ -107,11 +120,6 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({ selectedSto
 
     return opts;
   }, []);
-
-  const [benchmarkId, setBenchmarkId] = useState<string>("none");
-  const [benchmark2Id, setBenchmark2Id] = useState<string>("none");
-  
-  const [baseline, setBaseline] = useState<string>("portfolio1");
 
   const currentBenchmark = useMemo(
     () =>
@@ -521,187 +529,6 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({ selectedSto
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
-          gap: 2,
-          mb: 1.5,
-        }}
-      >
-        <ToggleButtonGroup
-          value={baseline}
-          exclusive
-          onChange={(_, newValue) => newValue && setBaseline(newValue)}
-          fullWidth
-          sx={{
-            gridColumn: "1 / -1",
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 2,
-            "& .MuiToggleButton-root": {
-              border: "none",
-              borderRadius: 1,
-              height: 6,
-              minHeight: 6,
-              padding: 0,
-              "&.Mui-selected": {
-                bgcolor: "grey.600",
-                "&:hover": {
-                  bgcolor: "grey.700",
-                },
-              },
-              "&:not(.Mui-selected)": {
-                bgcolor: "grey.300",
-                "&:hover": {
-                  bgcolor: "grey.400",
-                },
-              },
-            },
-          }}
-        >
-          <ToggleButton value="portfolio1" aria-label="Portfolio 1" />
-          <ToggleButton value="portfolio2" aria-label="Portfolio 2" />
-          <ToggleButton value="benchmark1" aria-label="Benchmark 1" />
-          <ToggleButton value="benchmark2" aria-label="Benchmark 2" />
-        </ToggleButtonGroup>
-      </Box>
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
-          gap: 2,
-          mb: 1.5,
-        }}
-      >
-        <Autocomplete
-          fullWidth
-          size="small"
-          options={[{ isin: "", name: "None" }, ...STOCKS]}
-          getOptionLabel={(option) => option.isin === "" ? "None" : `${option.name} (${option.isin})`}
-          value={STOCKS.find((s) => s.isin === selectedStockIsin) || { isin: "", name: "None" } as any}
-          onChange={(_, newValue) => onStockSelect(newValue?.isin || "")}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Portfolio 1"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: baseline === "portfolio1" ? "rgba(150, 150, 150, 0.1)" : "transparent",
-                },
-              }}
-            />
-          )}
-        />
-
-        <Autocomplete
-          fullWidth
-          size="small"
-          options={[
-            { id: "", label: "None" },
-            ...STOCKS.map((s) => ({ id: `stock:${s.isin}`, label: `${s.name} (${s.isin})` })),
-            { id: "avg", label: `${level} Universe average` },
-          ]}
-          getOptionLabel={(option) => option.label}
-          value={
-            portfolio2Key === ""
-              ? { id: "", label: "None" }
-              : portfolio2Key === "avg"
-              ? { id: "avg", label: `${level} Universe average` }
-              : { id: portfolio2Key, label: STOCKS.find((s) => `stock:${s.isin}` === portfolio2Key)?.name ? `${STOCKS.find((s) => `stock:${s.isin}` === portfolio2Key)?.name} (${STOCKS.find((s) => `stock:${s.isin}` === portfolio2Key)?.isin})` : portfolio2Key }
-          }
-          onChange={(_, newValue) => setPortfolio2Key(newValue?.id || "")}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Portfolio 2"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: baseline === "portfolio2" ? "rgba(150, 150, 150, 0.1)" : "transparent",
-                },
-              }}
-            />
-          )}
-        />
-
-        <Autocomplete
-          fullWidth
-          size="small"
-          options={benchmarkOptions}
-          getOptionLabel={(option) => option.label}
-          value={benchmarkOptions.find((b) => b.id === benchmarkId) || benchmarkOptions[0]}
-          onChange={(_, newValue) => setBenchmarkId(newValue?.id || "none")}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Benchmark 1"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: baseline === "benchmark1" ? "rgba(150, 150, 150, 0.1)" : "transparent",
-                },
-              }}
-            />
-          )}
-        />
-
-        <Autocomplete
-          fullWidth
-          size="small"
-          options={benchmarkOptions}
-          getOptionLabel={(option) => option.label}
-          value={benchmarkOptions.find((b) => b.id === benchmark2Id) || benchmarkOptions[0]}
-          onChange={(_, newValue) => setBenchmark2Id(newValue?.id || "none")}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Benchmark 2"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: baseline === "benchmark2" ? "rgba(150, 150, 150, 0.1)" : "transparent",
-                },
-              }}
-            />
-          )}
-        />
-      </Box>
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" },
-          gap: 2,
-          mb: 2,
-        }}
-      >
-        <Box>
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={level}
-            onChange={(_, val) => val && setLevel(val as Level)}
-            fullWidth
-          >
-            <ToggleButton value="Sectors">Sectors</ToggleButton>
-            <ToggleButton value="Industry Groups">Industry Groups</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        <Box>
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={categoryFilter}
-            onChange={(_, val) => val && setCategoryFilter(val as CategoryFilter)}
-            fullWidth
-          >
-            <ToggleButton value="All">All</ToggleButton>
-            <ToggleButton value="Top 5">Top 5</ToggleButton>
-            <ToggleButton value="Top 10">Top 10</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-      </Box>
-
       <Plot
         data={data as any}
         layout={layout as any}

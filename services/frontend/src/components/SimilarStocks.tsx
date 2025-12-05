@@ -738,61 +738,75 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({ selectedStockIsin, onStoc
           config={{ displayModeBar: false, responsive: true } as any}
           style={{ width: "100%" }}
         />
-        ) : (
-          <Plot
-            data={
-              (() => {
-                const allSectors = sectorOrderConfig.orderedSectors;
-                const top10 = nbrs.slice(0, 10);
-                
-                // Combine focal stock with top 10 neighbors
-                const allStocks = [focalStock, ...top10.map(n => n.stock)];
-                
-                // Create one trace per sector (stacked bars)
-                return allSectors.map((sector) => {
-                  return {
-                    x: allStocks.map((stock) => stock.sectors[sector] || 0),
-                    y: allStocks.map((stock) => stock.name),
-                    type: "bar",
-                    orientation: "h",
-                    name: sector,
-                    marker: {
-                      color: allSectorColorMap[sector] || "grey",
-                    },
-                    hovertemplate: `<b>${sector}</b>: %{x:.2f}%<extra></extra>`,
-                  } as any;
-                });
-              })() as any
+        ) : (() => {
+          const allSectors = sectorOrderConfig.orderedSectors;
+          const top10 = nbrs.slice(0, 10);
+          
+          // Focal stock first, then top 10 neighbors
+          const allStocks = [focalStock, ...top10.map(n => n.stock)];
+          
+          // Create y-axis labels with rank
+          const yLabels = allStocks.map((stock, idx) => {
+            if (idx === 0) {
+              return `Focal: ${stock.name}`;
+            } else {
+              return `${idx}. ${stock.name}`;
             }
-            layout={
-              {
-                barmode: "stack",
-                height: 500,
-                margin: { l: 180, r: 20, t: 40, b: 60 },
-                xaxis: {
-                  title: { text: "Weight (%)" },
-                  range: [0, 100],
-                },
-                yaxis: {
-                  autorange: "reversed",
-                },
-                showlegend: true,
-                legend: {
-                  x: 1.02,
-                  y: 1,
-                  xanchor: "left",
-                  yanchor: "top",
-                  title: { text: "Sectors" },
-                  bgcolor: "rgba(255, 255, 255, 0.8)",
-                  bordercolor: "#999",
-                  borderwidth: 1,
-                },
-              } as any
-            }
-            config={{ displayModeBar: false, responsive: true } as any}
-            style={{ width: "100%" }}
-          />
-        )}
+          });
+          
+          // Create one trace per sector (stacked bars)
+          const plotData = allSectors.map((sector) => {
+            return {
+              x: allStocks.map((stock) => stock.sectors[sector] || 0),
+              y: yLabels,
+              type: "bar",
+              orientation: "h",
+              name: sector,
+              marker: {
+                color: allSectorColorMap[sector] || "grey",
+              },
+              hovertemplate: `<b>${sector}</b>: %{x:.2f}%<extra></extra>`,
+            } as any;
+          });
+          
+          return (
+            <Plot
+              data={plotData as any}
+              layout={
+                {
+                  barmode: "stack",
+                  height: 500,
+                  margin: { l: 220, r: 20, t: 40, b: 60 },
+                  xaxis: {
+                    title: { text: "Weight (%)" },
+                    range: [0, 100],
+                  },
+                  yaxis: {
+                    autorange: "reversed",
+                    side: "left",
+                    tickfont: { size: 11 },
+                    automargin: true,
+                    ticksuffix: "  ",
+                    tickprefix: "",
+                  },
+                  showlegend: true,
+                  legend: {
+                    x: 1.02,
+                    y: 1,
+                    xanchor: "left",
+                    yanchor: "top",
+                    title: { text: "Sectors" },
+                    bgcolor: "rgba(255, 255, 255, 0.8)",
+                    bordercolor: "#999",
+                    borderwidth: 1,
+                  },
+                } as any
+              }
+              config={{ displayModeBar: false, responsive: true } as any}
+              style={{ width: "100%" }}
+            />
+          );
+        })()}
       </Paper>
     </Box>
   );

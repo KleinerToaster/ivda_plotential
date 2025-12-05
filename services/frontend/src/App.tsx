@@ -86,29 +86,38 @@ function App() {
               color="inherit"
               size="small"
               variant="outlined"
-              sx={{ border: "1px solid white" }}
+              sx={{ 
+                border: "1px solid white",
+                '&.Mui-disabled': {
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                }
+              }}
               onClick={handleSaveState}
               disabled={!stateName.trim() || savedStates.length >= maxSavedStates}
             >
               Save state
             </Button>
             {savedStates.length === 0 ? (
-              <Typography variant="caption" color="grey.300">
+              <Typography variant="caption" color="white">
                 No saved states
               </Typography>
             ) : (
-              savedStates.map((state) => (
-                <Button
-                  key={state.name}
-                  color="inherit"
-                  size="small"
-                  variant="outlined"
-                  sx={{ border: "1px solid white" }}
-                  onClick={() => handleLoadState(state)}
-                >
-                  {state.name}
-                </Button>
-              ))
+              <>
+                <Divider orientation="vertical" sx={{ bgcolor: 'white', width: '0.4px', height: '30px'}} />
+                {savedStates.map((state) => (
+                  <Button
+                    key={state.name}
+                    color="inherit"
+                    size="small"
+                    variant="outlined"
+                    sx={{ border: "0.5px solid white" }}
+                    onClick={() => handleLoadState(state)}
+                  >
+                    {state.name}
+                  </Button>
+                ))}
+              </>
             )}
           </Box>
           <Box

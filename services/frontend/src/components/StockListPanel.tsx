@@ -836,7 +836,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
         >
           <Paper
             variant="outlined"
-            sx={{ p: 1.5, height: "fit-content", overflow: "hidden" }}
+            sx={{ p: 1.5, height: 442, display: "flex", flexDirection: "column", overflow: "hidden" }}
           >
             <Typography
               variant="subtitle2"
@@ -849,7 +849,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
               dense
               disablePadding
               sx={{
-                maxHeight: 450,
+                flex: 1,
                 overflow: "auto",
                 border: "1px solid #e0e0e0",
                 borderRadius: 1,
@@ -1116,7 +1116,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                   <Paper
                     variant="outlined"
                     sx={{
-                      maxHeight: 420,
+                      maxHeight: 365.5,
                       overflowY: "auto",
                       width: { xs: "100%", md: "90%" },
                     }}

@@ -11,6 +11,196 @@ const median = (vals: number[]): number => {
   return valid[mid];
 };
 
+// Constants
+const SECTOR_TO_INDUSTRY_GROUPS: Record<string, string[]> = {
+  Financials: ["Banks", "Financial Services", "Insurance"],
+  "Health Care": [
+    "Health Care Equipment & Services",
+    "Pharmaceuticals, Biotechnology & Life Sciences",
+  ],
+  "Information Technology": [
+    "Semiconductors & Semiconductor Equipment",
+    "Software & Services",
+    "Technology Hardware & Equipment",
+  ],
+  Industrials: [
+    "Capital Goods",
+    "Commercial & Professional Services",
+    "Transportation",
+  ],
+  Energy: ["Energy"],
+  Materials: ["Materials"],
+  "Consumer Staples": [
+    "Food & Staples Retailing",
+    "Food Beverage & Tobacco",
+    "Household & Personal Products",
+  ],
+  "Consumer Discretionary": [
+    "Automobiles & Components",
+    "Consumer Durables & Apparel",
+    "Consumer Services",
+    "Retailing",
+  ],
+  "Real Estate": [
+    "Equity Real Estate Investment Trusts (REITs)",
+    "Real Estate Management & Development",
+  ],
+  "Communication Services": [
+    "Media & Entertainment",
+    "Telecommunication Services",
+  ],
+  Utilities: ["Utilities"],
+};
+
+const BLUE_SHADES = [
+  "rgba(66, 133, 244, 0.55)",
+  "rgba(66, 133, 244, 0.55)",
+  "rgba(66, 133, 244, 0.55)",
+  "rgba(66, 133, 244, 0.55)",
+];
+
+const RED_SHADES = [
+  "rgba(244, 67, 54, 0.55)",
+  "rgba(244, 67, 54, 0.55)",
+  "rgba(244, 67, 54, 0.55)",
+  "rgba(244, 67, 54, 0.55)",
+];
+
+// Asset colors: Asset 1=blue, Asset 2=red, Benchmark 1=yellow, Benchmark 2=green
+const ASSET1_COLOR = "rgba(66, 133, 244, 0.85)";  // Blue - sector bars
+const ASSET2_COLOR = "rgba(244, 67, 54, 0.85)";   // Red - sector bars
+const BENCHMARK1_COLOR = "rgba(255, 193, 7, 0.85)";  // Yellow
+const BENCHMARK2_COLOR = "rgba(76, 175, 80, 0.85)";  // Green
+const STOCK_COLOR = ASSET1_COLOR;  // Backward compatibility
+const COMP_COLOR = ASSET2_COLOR;   // Backward compatibility
+const REMAINDER_COLOR = "lightgray";
+const DISTRIBUTION_CURVE_COLOR = "#555555";
+
+// Helper functions
+const calculateKernelDensity = (
+  samples: number[],
+  steps: number = 80,
+  bandwidth: number = 8
+): { densities: number[]; ys: number[] } => {
+  const densities: number[] = [];
+  const ys: number[] = [];
+  
+  for (let i = 0; i <= steps; i++) {
+    const y = (100 * i) / steps;
+    ys.push(y);
+    let density = 0;
+    samples.forEach((s) => {
+      const diff = (y - s) / bandwidth;
+      density += Math.exp(-0.5 * diff * diff);
+    });
+    densities.push(density);
+  }
+  
+  return { densities, ys };
+};
+
+const createDistributionCurve = (
+  xCenter: number,
+  samples: number[],
+  sectorLabel: string,
+  benchmarkLabel: string,
+  curveWidth: number = 0.35
+) => {
+  if (!samples.length) return null;
+  
+  const { densities, ys } = calculateKernelDensity(samples);
+  const maxD = Math.max(...densities) || 1;
+  
+  const curveX: number[] = [];
+  const curveY: number[] = [];
+  densities.forEach((d, i) => {
+    const bow = (d / maxD) * curveWidth;
+    curveX.push(xCenter - 0.175 + bow);
+    curveY.push(ys[i]);
+  });
+  
+  return {
+    x: curveX,
+    y: curveY,
+    type: "scatter",
+    mode: "lines",
+    name: `${benchmarkLabel} – ${sectorLabel}`,
+    line: {
+      width: 2,
+      shape: "spline",
+      smoothing: 1.3,
+      color: DISTRIBUTION_CURVE_COLOR,
+    },
+    hovertemplate: `${benchmarkLabel} (${sectorLabel}): %{y:.1f}%<extra></extra>`,
+    showlegend: false,
+  };
+};
+
+const getIndustryGroupWeights = (
+  stock: { industryGroups: Record<string, number> } | null,
+  industryGroups: string[]
+): { ig: string; weight: number }[] => {
+  if (!stock) return [];
+  
+  const weights: { ig: string; weight: number }[] = [];
+  industryGroups.forEach((ig) => {
+    const weight = stock.industryGroups[ig] || 0;
+    if (weight > 0) {
+      weights.push({ ig, weight });
+    }
+  });
+  return weights;
+};
+
+const createIndustryGroupBars = (
+  xPos: number,
+  igWeights: { ig: string; weight: number }[],
+  sectorName: string,
+  colorShades: string[],
+  offsetGroup: string
+) => {
+  const traces: any[] = [];
+  const totalWeight = igWeights.reduce((sum, item) => sum + item.weight, 0);
+  
+  if (igWeights.length === 0) {
+    // Placeholder bar
+    traces.push({
+      x: [xPos],
+      y: [-100],
+      type: "bar",
+      marker: { color: REMAINDER_COLOR, opacity: 0.3, line: { color: "white", width: 0.5 } },
+      offsetgroup: offsetGroup,
+      width: 0.35,
+      base: [0],
+      hovertemplate: `No exposure to ${sectorName}<extra></extra>`,
+      showlegend: false,
+    });
+    return traces;
+  }
+  
+  let cumulative = 0;
+  igWeights.forEach((item, idx) => {
+    const rescaledHeight = totalWeight > 0 ? (item.weight / totalWeight) * 100 : 0;
+    const colorIdx = igWeights.length > 1 ? idx % colorShades.length : 0;
+    
+    traces.push({
+      x: [xPos],
+      y: [-rescaledHeight],
+      type: "bar",
+      marker: { color: colorShades[colorIdx], line: { color: "white", width: 1.5 } },
+      offsetgroup: offsetGroup,
+      width: 0.35,
+      base: [-cumulative],
+      hovertemplate: `${item.ig}: ${item.weight.toFixed(1)}% of portfolio<br>(${rescaledHeight.toFixed(1)}% of ${sectorName})<extra></extra>`,
+      showlegend: false,
+    });
+    
+    cumulative += rescaledHeight;
+  });
+  
+  return traces;
+};
+
 interface WeightChartsProps {
   filteredSectorData: {
     sectors: string[];
@@ -51,6 +241,276 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
   const emptyCompName = "Comparison stock";
 
   if (!showWeightDistributions) {
+    if (showIndustryGroups) {
+      // Stacked bar chart showing industry group breakdown within each sector
+      const SECTOR_TO_INDUSTRY_GROUPS: Record<string, string[]> = {
+        Financials: ["Banks", "Financial Services", "Insurance"],
+        "Health Care": [
+          "Health Care Equipment & Services",
+          "Pharmaceuticals, Biotechnology & Life Sciences",
+        ],
+        "Information Technology": [
+          "Semiconductors & Semiconductor Equipment",
+          "Software & Services",
+          "Technology Hardware & Equipment",
+        ],
+        Industrials: [
+          "Capital Goods",
+          "Commercial & Professional Services",
+          "Transportation",
+        ],
+        Energy: ["Energy"],
+        Materials: ["Materials"],
+        "Consumer Staples": [
+          "Food & Staples Retailing",
+          "Food Beverage & Tobacco",
+          "Household & Personal Products",
+        ],
+        "Consumer Discretionary": [
+          "Automobiles & Components",
+          "Consumer Durables & Apparel",
+          "Consumer Services",
+          "Retailing",
+        ],
+        "Real Estate": [
+          "Equity Real Estate Investment Trusts (REITs)",
+          "Real Estate Management & Development",
+        ],
+        "Communication Services": [
+          "Media & Entertainment",
+          "Telecommunication Services",
+        ],
+        Utilities: ["Utilities"],
+      };
+
+      const traces: any[] = [];
+      const medianShapes: any[] = [];
+      
+      // For each sector with non-zero weight
+      filteredSectorData.sectors.forEach((sector, sectorIdx) => {
+        const xPos = filteredSectorData.positions[sectorIdx];
+        const sectorWeight = filteredSectorData.stockWeights[sectorIdx];
+        const industryGroups = SECTOR_TO_INDUSTRY_GROUPS[sector] || [];
+        
+        // Add the main sector weight bar (same as when showIndustryGroups = false)
+        traces.push({
+          x: [xPos],
+          y: [sectorWeight],
+          type: "bar",
+          name: sector,
+          marker: { color: "rgba(66, 133, 244, 0.8)" },
+          offsetgroup: "stock",
+          width: 0.35,
+          hovertemplate: `${sector}: ${sectorWeight.toFixed(1)}%<extra></extra>`,
+          showlegend: false,
+        });
+        
+        // Add remainder bar (transparent gray) on top of sector weight
+        const remainder = 100 - sectorWeight;
+        traces.push({
+          x: [xPos],
+          y: [remainder],
+          type: "bar",
+          name: "Remainder",
+          marker: { color: "lightgray", opacity: 0.3 },
+          offsetgroup: "stock",
+          width: 0.35,
+          base: [sectorWeight],
+          hovertemplate: `Remainder: ${remainder.toFixed(1)}%<extra></extra>`,
+          showlegend: false,
+        });
+        
+        // Get industry group weights for this sector
+        const igWeights: { ig: string; weight: number }[] = [];
+        let totalIGWeight = 0;
+        
+        industryGroups.forEach((ig) => {
+          const weight = selectedStock?.industryGroups[ig] || 0;
+          if (weight > 0) {
+            igWeights.push({ ig, weight });
+            totalIGWeight += weight;
+          }
+        });
+        
+        // Create stacked bars for industry groups BELOW the x-axis
+        // These bars go downward, showing relative proportions (rescaled to -100%)
+        // Use different shades of blue for multiple IGs in same sector
+        
+        let cumulative = 0;
+        igWeights.forEach((item, igIdx) => {
+          const rescaledHeight = totalIGWeight > 0 ? (item.weight / totalIGWeight) * 100 : 0;
+          const colorIdx = igWeights.length > 1 ? igIdx % BLUE_SHADES.length : 0;
+          const igColor = BLUE_SHADES[colorIdx];
+          
+          traces.push({
+            x: [xPos],
+            y: [-rescaledHeight],  // Negative to go below x-axis
+            type: "bar",
+            name: item.ig,
+            marker: { color: igColor, line: { color: "white", width: 1.5 } },
+            offsetgroup: "stock",
+            width: 0.35,
+            base: [-cumulative],  // Negative base to stack downward
+            hovertemplate: `${item.ig}: ${item.weight.toFixed(1)}% of portfolio<br>(${rescaledHeight.toFixed(1)}% of ${sector})<extra></extra>`,
+            showlegend: false,
+          });
+          
+          cumulative += rescaledHeight;
+        });
+        
+        // Add distribution curve for sector
+        const samples = distSamplesBenchBySector[sector] ?? [];
+        if (samples.length > 0) {
+          const curveWidth = 0.35;
+          const steps = 80;
+          const bandwidth = 8;
+          const densities: number[] = [];
+          const ys: number[] = [];
+          
+          for (let i = 0; i <= steps; i++) {
+            const y = (100 * i) / steps;
+            ys.push(y);
+            let density = 0;
+            samples.forEach((s) => {
+              const u = (y - s) / bandwidth;
+              density += Math.exp(-0.5 * u * u);
+            });
+            densities.push(density);
+          }
+          
+          const maxD = Math.max(...densities) || 1;
+          const curveX: number[] = [];
+          const curveY: number[] = [];
+          densities.forEach((d, i) => {
+            const bow = (d / maxD) * curveWidth;
+            curveX.push(xPos - 0.175 + bow);
+            curveY.push(ys[i]);
+          });
+          
+          traces.push({
+            x: curveX,
+            y: curveY,
+            type: "scatter",
+            mode: "lines",
+            name: `${currentBenchmarkLabel} – ${sector}`,
+            line: {
+              width: 2,
+              shape: "spline",
+              smoothing: 1.3,
+              color: "#555555",
+            },
+            hovertemplate: `${currentBenchmarkLabel} (${sector}): %{y:.1f}%<extra></extra>`,
+            showlegend: false,
+          });
+          
+          // Add median line
+          const med = median(samples);
+          medianShapes.push({
+            type: "line",
+            xref: "x",
+            yref: "y",
+            x0: xPos - 0.175,
+            x1: xPos + 0.175,
+            y0: med,
+            y1: med,
+            line: {
+              width: 4,
+              color: "#555555",
+            },
+          });
+        }
+      });
+
+      return (
+        <Plot
+          data={traces}
+          layout={
+            {
+              barmode: "stack",
+              height: 450,
+              margin: { l: 60, r: 20, t: 45, b: 100 },
+              yaxis: {
+                title: { text: "" },
+                range: [-100, 100],  // Extended range to show bars below axis
+                tickmode: "array",
+                tickvals: [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100],
+                ticktext: ["100", "80", "60", "40", "20", "0", "20", "40", "60", "80", "100"],
+                zeroline: true,
+                zerolinewidth: 2,
+                zerolinecolor: "black",
+                showline: true,
+                linewidth: 2,
+                linecolor: "black",
+                showgrid: false,
+              },
+              xaxis: {
+                title: { text: "" },
+                tickmode: "array",
+                tickvals: filteredSectorData.positions,
+                ticktext: filteredSectorData.sectors,
+                range: [0.5, 11.5],
+                side: "top",
+                tickangle: -25,
+              },
+              shapes: [
+                ...medianShapes,
+                // Grid lines for positive y-values only
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 20, y1: 20, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 40, y1: 40, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 60, y1: 60, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 80, y1: 80, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                {
+                  type: "line",
+                  xref: "x",
+                  yref: "y",
+                  x0: 0.5,
+                  x1: 11.5,
+                  y0: 0,
+                  y1: 0,
+                  line: {
+                    width: 2,
+                    color: "black",
+                  },
+                  layer: "above",
+                },
+              ],
+              annotations: [
+                {
+                  x: -0.07,
+                  y: 50,
+                  xref: "paper",
+                  yref: "y",
+                  text: "Sector Weight in %",
+                  textangle: -90,
+                  showarrow: false,
+                  font: { size: 12 },
+                  xanchor: "center",
+                  yanchor: "middle",
+                },
+                {
+                  x: -0.07,
+                  y: -50,
+                  xref: "paper",
+                  yref: "y",
+                  text: "Rescaled Industry Weights in %",
+                  textangle: -90,
+                  showarrow: false,
+                  font: { size: 12 },
+                  xanchor: "center",
+                  yanchor: "middle",
+                },
+              ],
+              showlegend: false,
+            } as any
+          }
+          config={{ displayModeBar: false, responsive: true } as any}
+          style={{ width: "100%" }}
+        />
+      );
+    }
+    
+    // Original sector-only view (showIndustryGroups = false)
     return (
       <Plot
         data={
@@ -62,7 +522,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               y: filteredSectorData.stockWeights,
               type: "bar",
               name: selectedStock?.name ?? emptyStockName,
-              marker: { color: "rgba(66, 133, 244, 0.8)" },
+              marker: { color: STOCK_COLOR },
               offsetgroup: "stock",
               width: 0.35,
             });
@@ -75,55 +535,20 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               y: remainderWeights,
               type: "bar",
               name: "Remainder",
-              marker: { color: "lightgray", opacity: 0.3 },
+              marker: { color: REMAINDER_COLOR, opacity: 0.3 },
               offsetgroup: "stock",
               width: 0.35,
               showlegend: false,
               hovertemplate: "Remainder: %{y:.1f}%<extra></extra>",
             });
 
-            const curveWidth = 0.39;
             filteredSectorData.sectors.forEach((sector, idx) => {
               const samples = distSamplesBenchBySector[sector] ?? [];
-              if (!samples.length) return;
               const xCenter = filteredSectorData.positions[idx];
-              const steps = 80;
-              const bandwidth = 8;
-              const densities: number[] = [];
-              const ys: number[] = [];
-              for (let i = 0; i <= steps; i++) {
-                const y = (100 * i) / steps;
-                ys.push(y);
-                let density = 0;
-                samples.forEach((s) => {
-                  const u = (y - s) / bandwidth;
-                  density += Math.exp(-0.5 * u * u);
-                });
-                densities.push(density);
+              const curve = createDistributionCurve(xCenter, samples, sector, currentBenchmarkLabel);
+              if (curve) {
+                traces.push(curve);
               }
-              const maxD = Math.max(...densities) || 1;
-              const curveX: number[] = [];
-              const curveY: number[] = [];
-              densities.forEach((d, i) => {
-                const bow = (d / maxD) * curveWidth;
-                curveX.push(xCenter - 0.195 + bow);
-                curveY.push(ys[i]);
-              });
-              traces.push({
-                x: curveX,
-                y: curveY,
-                type: "scatter",
-                mode: "lines",
-                name: `${currentBenchmarkLabel} – ${sector}`,
-                line: {
-                  width: 2,
-                  shape: "spline",
-                  smoothing: 1.3,
-                  color: "#555555",
-                },
-                hovertemplate: `${currentBenchmarkLabel} (${sector}): %{y:.1f}%<extra></extra>`,
-                showlegend: false,
-              });
             });
 
             return traces;
@@ -146,6 +571,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               showline: true,
               linewidth: 2,
               linecolor: "black",
+              showgrid: true,
+              gridwidth: 1.5,
+              gridcolor: "rgba(128, 128, 128, 0.3)",
             },
             xaxis: {
               title: { text: "" },
@@ -164,13 +592,13 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
                 type: "line",
                 xref: "x",
                 yref: "y",
-                x0: xCenter - 0.195,
-                x1: xCenter + 0.195,
+                x0: xCenter - 0.175,
+                x1: xCenter + 0.175,
                 y0: med,
                 y1: med,
                 line: {
                   width: 4,
-                  color: "#555555",
+                  color: DISTRIBUTION_CURVE_COLOR,
                 },
               };
             }),
@@ -184,147 +612,215 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
   }
 
   if (showIndustryGroups) {
-    const tempData: Array<{
-      ig: string;
+    // Industry group breakdown with comparison stock
+
+    // Build combined sector data including sectors where either stock has weight
+    const combinedSectorData: Array<{
+      sector: string;
       stockWeight: number;
       compWeight: number;
     }> = [];
-    allIGNames.forEach((ig) => {
-      const stockW = selectedStock?.industryGroups[ig] || 0;
-      const compW = comparisonStock?.industryGroups[ig] || 0;
-      if (stockW > 0 || compW > 0) {
-        tempData.push({ ig, stockWeight: stockW, compWeight: compW });
+
+    // Add sectors from baseline (already filtered and sorted by baseline weight)
+    filteredSectorData.sectors.forEach((sector, idx) => {
+      const stockWeight = filteredSectorData.stockWeights[idx];
+      const compWeight = comparisonStock?.sectors[sector] || 0;
+      combinedSectorData.push({ sector, stockWeight, compWeight });
+    });
+
+    // Add sectors where only comparison stock has weight
+    allSectorNames.forEach((sector) => {
+      const stockWeight = selectedStock?.sectors[sector] || 0;
+      const compWeight = comparisonStock?.sectors[sector] || 0;
+      
+      if (stockWeight === 0 && compWeight > 0) {
+        combinedSectorData.push({ sector, stockWeight: 0, compWeight });
       }
     });
 
-    const selectedHasWeight = tempData.filter((item) => item.stockWeight > 0);
-    const onlyCompHasWeight = tempData.filter(
-      (item) => item.stockWeight === 0 && item.compWeight > 0
-    );
+    // Sort the comparison-only sectors by weight
+    const baselineCount = filteredSectorData.sectors.length;
+    if (combinedSectorData.length > baselineCount) {
+      const compOnlySectors = combinedSectorData.slice(baselineCount);
+      compOnlySectors.sort((a, b) => b.compWeight - a.compWeight);
+      combinedSectorData.splice(baselineCount, compOnlySectors.length, ...compOnlySectors);
+    }
 
-    selectedHasWeight.sort((a, b) => b.stockWeight - a.stockWeight);
-    onlyCompHasWeight.sort((a, b) => b.compWeight - a.compWeight);
-
-    const combinedData = [...selectedHasWeight, ...onlyCompHasWeight];
-
-    const filteredIGs: string[] = [];
-    const filteredStockWeights: number[] = [];
-    const filteredCompWeights: number[] = [];
-    combinedData.forEach((item) => {
-      filteredIGs.push(item.ig);
-      filteredStockWeights.push(item.stockWeight);
-      filteredCompWeights.push(item.compWeight);
+    const traces: any[] = [];
+    const sectors: string[] = [];
+    const positions: number[] = [];
+    
+    // For each sector where at least one stock has weight
+    combinedSectorData.forEach((sectorData, sectorIdx) => {
+      const sector = sectorData.sector;
+      const xPos = sectorIdx + 1;
+      const stockSectorWeight = sectorData.stockWeight;
+      const compSectorWeight = sectorData.compWeight;
+      const industryGroups = SECTOR_TO_INDUSTRY_GROUPS[sector] || [];
+      
+      sectors.push(sector);
+      positions.push(xPos);
+      
+      // Baseline stock sector bar
+      traces.push({
+        x: [xPos],
+        y: [stockSectorWeight],
+        type: "bar",
+        name: sector,
+        marker: { color: STOCK_COLOR },
+        offsetgroup: "stock",
+        width: 0.35,
+        hovertemplate: `${sector}: ${stockSectorWeight.toFixed(1)}%<extra></extra>`,
+        showlegend: false,
+      });
+      
+      // Baseline remainder
+      traces.push({
+        x: [xPos],
+        y: [100 - stockSectorWeight],
+        type: "bar",
+        marker: { color: REMAINDER_COLOR, opacity: 0.3 },
+        offsetgroup: "stock",
+        width: 0.35,
+        base: [stockSectorWeight],
+        hovertemplate: `Remainder: ${(100 - stockSectorWeight).toFixed(1)}%<extra></extra>`,
+        showlegend: false,
+      });
+      
+      // Comparison stock sector bar
+      traces.push({
+        x: [xPos],
+        y: [compSectorWeight],
+        type: "bar",
+        marker: { color: COMP_COLOR },
+        offsetgroup: "comp",
+        width: 0.35,
+        hovertemplate: `${sector}: ${compSectorWeight.toFixed(1)}%<extra></extra>`,
+        showlegend: false,
+      });
+      
+      // Comparison remainder
+      traces.push({
+        x: [xPos],
+        y: [100 - compSectorWeight],
+        type: "bar",
+        marker: { color: REMAINDER_COLOR, opacity: 0.3 },
+        offsetgroup: "comp",
+        width: 0.35,
+        base: [compSectorWeight],
+        hovertemplate: `Remainder: ${(100 - compSectorWeight).toFixed(1)}%<extra></extra>`,
+        showlegend: false,
+      });
+      
+      // Baseline stock industry groups (below x-axis)
+      const stockIgWeights = getIndustryGroupWeights(selectedStock, industryGroups);
+      const stockIgBars = createIndustryGroupBars(xPos, stockIgWeights, sector, BLUE_SHADES, "stock");
+      traces.push(...stockIgBars);
+      
+      // Comparison stock industry groups (below x-axis)
+      const compIgWeights = getIndustryGroupWeights(comparisonStock, industryGroups);
+      const compIgBars = createIndustryGroupBars(xPos, compIgWeights, sector, RED_SHADES, "comp");
+      traces.push(...compIgBars);
     });
 
-    const stockIGs: string[] = [];
-    const stockWeightsFiltered: number[] = [];
-    const stockRemainderIGs: string[] = [];
-    const stockRemainderValues: number[] = [];
-    const stockRemainderBase: number[] = [];
-    combinedData.forEach((item) => {
-      if (item.stockWeight > 0) {
-        stockIGs.push(item.ig);
-        stockWeightsFiltered.push(item.stockWeight);
-        stockRemainderIGs.push(item.ig);
-        stockRemainderValues.push(100 - item.stockWeight);
-        stockRemainderBase.push(item.stockWeight);
-      }
-    });
-
-    const compRemainders = filteredCompWeights.map((w) => 100 - w);
-    const separatorIndex = selectedHasWeight.length;
-    const shapes: any[] =
-      onlyCompHasWeight.length > 0 && separatorIndex < filteredIGs.length
-        ? [
-            {
-              type: "line",
-              xref: "paper",
-              yref: "paper",
-              x0: separatorIndex / filteredIGs.length,
-              x1: separatorIndex / filteredIGs.length,
-              y0: 0,
-              y1: 1,
-              line: {
-                color: "gray",
-                width: 2,
-                dash: "dot",
-              },
-            },
-          ]
-        : [];
-
-    const data = [
+    // Add separator line if there are comparison-only sectors
+    const shapes: any[] = [
+      // Grid lines for positive y-values only
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 20, y1: 20, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 40, y1: 40, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 60, y1: 60, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 80, y1: 80, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
       {
-        x: stockIGs,
-        y: stockWeightsFiltered,
-        type: "bar",
-        name: selectedStock?.name ?? emptyStockName,
-        marker: { color: "rgba(66, 133, 244, 0.8)" },
-        width: 0.39,
-        offset: -0.25,
+        type: "line",
+        xref: "x",
+        yref: "y",
+        x0: 0.5,
+        x1: Math.max(11.5, combinedSectorData.length + 0.5),
+        y0: 0,
+        y1: 0,
+        line: {
+          width: 2,
+          color: "black",
+        },
+        layer: "above",
       },
-      {
-        x: stockRemainderIGs,
-        y: stockRemainderValues,
-        type: "bar",
-        marker: { color: "lightgray" },
-        opacity: 0.25,
-        showlegend: false,
-        width: 0.39,
-        offset: -0.25,
-        base: stockRemainderBase,
-      },
-      {
-        x: filteredIGs,
-        y: filteredCompWeights,
-        type: "bar",
-        name: comparisonStock?.name ?? emptyCompName,
-        marker: { color: "rgba(255, 127, 80, 0.8)" },
-        width: 0.35,
-        offset: 0.25,
-      },
-      {
-        x: filteredIGs,
-        y: compRemainders,
-        type: "bar",
-        marker: { color: "lightgray" },
-        opacity: 0.3,
-        showlegend: false,
-        width: 0.35,
-        offset: 0.25,
-        base: filteredCompWeights,
-      },
-    ] as any;
+    ];
+    
+    if (combinedSectorData.length > baselineCount) {
+      shapes.push({
+        type: "line",
+        xref: "x",
+        yref: "paper",
+        x0: baselineCount + 0.5,
+        x1: baselineCount + 0.5,
+        y0: 0,
+        y1: 1,
+        line: {
+          color: "gray",
+          width: 2,
+          dash: "dot",
+        },
+      });
+    }
 
     return (
       <Plot
-        data={data}
+        data={traces}
         layout={{
           barmode: "group",
-          bargap: 0.65,
-          bargroupgap: 0.05,
-          height: 300,
-          margin: { l: 60, r: 20, t: 45, b: 60 },
+          height: 450,
+          margin: { l: 60, r: 20, t: 45, b: 100 },
           yaxis: {
-            title: { text: "Weight (%)" },
-            range: [0, 100],
-            tickmode: "linear",
-            tick0: 0,
-            dtick: 20,
+            title: { text: "" },
+            range: [-100, 100],
+            tickmode: "array",
+            tickvals: [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100],
+            ticktext: ["100", "80", "60", "40", "20", "0", "20", "40", "60", "80", "100"],
             zeroline: true,
             zerolinewidth: 2,
             zerolinecolor: "black",
             showline: true,
             linewidth: 2,
             linecolor: "black",
+            showgrid: false,
           },
           xaxis: {
             title: { text: "" },
-            tickvals: filteredSectorData.positions.map((v) => v - 0.3),
+            tickmode: "array",
+            tickvals: positions,
+            ticktext: sectors,
+            range: [0.5, Math.max(11.5, combinedSectorData.length + 0.5)],
             side: "top",
             tickangle: -25,
           },
           shapes,
+          annotations: [
+            {
+              x: -0.07,
+              y: 50,
+              xref: "paper",
+              yref: "y",
+              text: "Sector Weight in %",
+              textangle: -90,
+              showarrow: false,
+              font: { size: 12 },
+              xanchor: "center",
+              yanchor: "middle",
+            },
+            {
+              x: -0.07,
+              y: -50,
+              xref: "paper",
+              yref: "y",
+              text: "Rescaled Industry Weights in %",
+              textangle: -90,
+              showarrow: false,
+              font: { size: 12 },
+              xanchor: "center",
+              yanchor: "middle",
+            },
+          ],
           showlegend: false,
         } as any}
         config={{ displayModeBar: false, responsive: true } as any}
@@ -333,128 +829,127 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
     );
   }
 
-  const {
-    traces,
-    separatorPosition,
-    positions,
-    sectors,
-    onlyCompHasWeight,
-  } = (() => {
-    const tempData: Array<{
-      sector: string;
-      stockWeight: number;
-      compWeight: number;
-    }> = [];
+  // Comparison view: show both stocks' bars side by side for each sector
+  // Include sectors from baseline stock plus sectors where only comparison stock has weight
+  const comparisonData: Array<{
+    sector: string;
+    stockWeight: number;
+    compWeight: number;
+  }> = [];
 
-    allSectorNames.forEach((sector) => {
-      const stockW = selectedStock?.sectors[sector] || 0;
-      const compW = comparisonStock?.sectors[sector] || 0;
-      if (stockW > 0 || compW > 0) {
-        tempData.push({ sector, stockWeight: stockW, compWeight: compW });
-      }
+  // Add sectors from baseline (already filtered and sorted)
+  filteredSectorData.sectors.forEach((sector, idx) => {
+    const stockWeight = filteredSectorData.stockWeights[idx];
+    const compWeight = comparisonStock?.sectors[sector] || 0;
+    comparisonData.push({ sector, stockWeight, compWeight });
+  });
+
+  // Add sectors where only comparison stock has weight
+  allSectorNames.forEach((sector) => {
+    const stockWeight = selectedStock?.sectors[sector] || 0;
+    const compWeight = comparisonStock?.sectors[sector] || 0;
+    
+    if (stockWeight === 0 && compWeight > 0) {
+      comparisonData.push({ sector, stockWeight: 0, compWeight });
+    }
+  });
+
+  // Sort the comparison-only sectors by weight
+  const baselineCount = filteredSectorData.sectors.length;
+  if (comparisonData.length > baselineCount) {
+    const compOnlySectors = comparisonData.slice(baselineCount);
+    compOnlySectors.sort((a, b) => b.compWeight - a.compWeight);
+    comparisonData.splice(baselineCount, compOnlySectors.length, ...compOnlySectors);
+  }
+
+  const traces: any[] = [];
+  const sectors: string[] = [];
+  const positions: number[] = [];
+  
+  comparisonData.forEach((item, idx) => {
+    const xPos = idx + 1;
+    sectors.push(item.sector);
+    positions.push(xPos);
+    
+    // Baseline stock bar
+    traces.push({
+      x: [xPos],
+      y: [item.stockWeight],
+      type: "bar",
+      name: selectedStock?.name ?? emptyStockName,
+      marker: { color: STOCK_COLOR },
+      width: 0.35,
+      offsetgroup: "stock",
+      hovertemplate: `${item.sector}: ${item.stockWeight.toFixed(1)}%<extra></extra>`,
+      showlegend: false,
     });
-
-    const selectedHasWeight = tempData.filter((item) => item.stockWeight > 0);
-    const onlyCompHasWeightLocal = tempData.filter(
-      (item) => item.stockWeight === 0 && item.compWeight > 0
-    );
-
-    selectedHasWeight.sort((a, b) => b.stockWeight - a.stockWeight);
-    onlyCompHasWeightLocal.sort((a, b) => b.compWeight - a.compWeight);
-
-    const combinedData = [...selectedHasWeight, ...onlyCompHasWeightLocal];
-
-    const sectorsLocal: string[] = [];
-    const stockWeights: number[] = [];
-    const compWeights: number[] = [];
-    const positionsLocal: number[] = [];
-
-    combinedData.forEach((item, idx) => {
-      sectorsLocal.push(item.sector);
-      stockWeights.push(item.stockWeight);
-      compWeights.push(item.compWeight);
-      positionsLocal.push(idx + 1);
+    
+    // Baseline remainder
+    traces.push({
+      x: [xPos],
+      y: [100 - item.stockWeight],
+      type: "bar",
+      marker: { color: REMAINDER_COLOR, opacity: 0.3 },
+      width: 0.35,
+      offsetgroup: "stock",
+      base: [item.stockWeight],
+      hovertemplate: `Remainder: ${(100 - item.stockWeight).toFixed(1)}%<extra></extra>`,
+      showlegend: false,
     });
-
-    const stockPositions: number[] = [];
-    const stockWeightsFiltered: number[] = [];
-    const stockRemainderPositions: number[] = [];
-    const stockRemainderValues: number[] = [];
-    const stockRemainderBase: number[] = [];
-
-    combinedData.forEach((item, idx) => {
-      if (item.stockWeight > 0) {
-        stockPositions.push(idx + 1);
-        stockWeightsFiltered.push(item.stockWeight);
-        stockRemainderPositions.push(idx + 1);
-        stockRemainderValues.push(100 - item.stockWeight);
-        stockRemainderBase.push(item.stockWeight);
-      }
+    
+    // Comparison stock bar
+    traces.push({
+      x: [xPos],
+      y: [item.compWeight],
+      type: "bar",
+      name: comparisonStock?.name ?? emptyCompName,
+      marker: { color: COMP_COLOR },
+      width: 0.35,
+      offsetgroup: "comp",
+      hovertemplate: `${item.sector}: ${item.compWeight.toFixed(1)}%<extra></extra>`,
+      showlegend: false,
     });
+    
+    // Comparison remainder
+    traces.push({
+      x: [xPos],
+      y: [100 - item.compWeight],
+      type: "bar",
+      marker: { color: REMAINDER_COLOR, opacity: 0.3 },
+      width: 0.35,
+      offsetgroup: "comp",
+      base: [item.compWeight],
+      hovertemplate: `Remainder: ${(100 - item.compWeight).toFixed(1)}%<extra></extra>`,
+      showlegend: false,
+    });
+  });
 
-    const compRemainders = compWeights.map((w) => 100 - w);
-    const separatorPositionLocal = selectedHasWeight.length + 0.9;
-
-    const tracesLocal = [
-      {
-        x: stockPositions,
-        y: stockWeightsFiltered,
-        type: "bar",
-        name: selectedStock?.name ?? emptyStockName,
-        marker: { color: "rgba(66, 133, 244, 0.8)" },
-        width: 0.35,
-        offset: -0.25,
+  // Add separator line if there are comparison-only sectors
+  const shapes: any[] = [];
+  if (comparisonData.length > baselineCount) {
+    shapes.push({
+      type: "line",
+      xref: "x",
+      yref: "paper",
+      x0: baselineCount + 0.5,
+      x1: baselineCount + 0.5,
+      y0: 0,
+      y1: 1,
+      line: {
+        color: "gray",
+        width: 2,
+        dash: "dot",
       },
-      {
-        x: stockRemainderPositions,
-        y: stockRemainderValues,
-        type: "bar",
-        marker: { color: "lightgray" },
-        opacity: 0.3,
-        showlegend: false,
-        width: 0.35,
-        offset: -0.25,
-        base: stockRemainderBase,
-      },
-      {
-        x: positionsLocal,
-        y: compWeights,
-        type: "bar",
-        name: comparisonStock?.name ?? emptyCompName,
-        marker: { color: "rgba(255, 127, 80, 0.8)" },
-        width: 0.35,
-        offset: 0.25,
-      },
-      {
-        x: positionsLocal,
-        y: compRemainders,
-        type: "bar",
-        marker: { color: "lightgray" },
-        opacity: 0.2,
-        showlegend: false,
-        width: 0.35,
-        offset: 0.25,
-        base: compWeights,
-      },
-    ] as any;
-
-    return {
-      traces: tracesLocal,
-      separatorPosition: separatorPositionLocal,
-      positions: positionsLocal,
-      sectors: sectorsLocal,
-      onlyCompHasWeight: onlyCompHasWeightLocal,
-    };
-  })();
+    });
+  }
 
   return (
     <Plot
       data={traces}
       layout={{
-        barmode: "overlay",
-        bargap: 0.65,
+        barmode: "group",
         height: 300,
-        margin: { l: 60, r: 20, t: 45, b: 60 },
+        margin: { l: 60, r: 20, t: 45, b: 100 },
         yaxis: {
           title: { text: "Weight (%)" },
           range: [0, 100],
@@ -467,34 +962,20 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           showline: true,
           linewidth: 2,
           linecolor: "black",
+          showgrid: true,
+          gridwidth: 1.5,
+          gridcolor: "rgba(128, 128, 128, 0.3)",
         },
         xaxis: {
           title: { text: "" },
           tickmode: "array",
           tickvals: positions,
           ticktext: sectors,
-          range: [0.5, 11.5],
+          range: [0.5, Math.max(11.5, comparisonData.length + 0.5)],
           side: "top",
           tickangle: -25,
         },
-        shapes: onlyCompHasWeight.length > 0
-          ? [
-              {
-                type: "line",
-                xref: "x",
-                yref: "paper",
-                x0: separatorPosition,
-                x1: separatorPosition,
-                y0: 0,
-                y1: 1,
-                line: {
-                  color: "gray",
-                  width: 2,
-                  dash: "dot",
-                },
-              },
-            ]
-          : [],
+        shapes,
         showlegend: false,
       } as any}
       config={{ displayModeBar: false, responsive: true } as any}

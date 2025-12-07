@@ -47,8 +47,6 @@ export type SaveStateConfig = {
   activeListType: "subset" | "sector";
   highlightedStockIsin: string | null;
   highlightedIG: string | null;
-  showIndustryGroups: boolean;
-  showWeightDistributions: boolean;
   scatterSector: string;
   sectorListFocus: string;
 };
@@ -304,15 +302,22 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
     return sectorColorConfig.palette;
   }, []);
 
+  // Gray palette for drill-down visualization
+  const grayPalette = useMemo(() => {
+    return sectorColorConfig.grayPalette || sectorColorConfig.palette;
+  }, []);
+
   const sectorColorMap = useMemo(() => {
     // Use the shared ordered sectors list (ordered by average weight)
     const sectors = sectorOrderConfig.orderedSectors;
     const map: Record<string, string> = {};
     sectors.forEach((sector, i) => {
-      map[sector] = sectorColorPalette[i % sectorColorPalette.length];
+      map[sector] = grayPalette[i % grayPalette.length];
     });
     return map;
-  }, [sectorColorPalette]);
+  }, [grayPalette]);
+
+  const DRILLDOWN_SECTOR_BORDER_COLOR = "#383838";
 
   const benchmarkOptions: BenchmarkOption[] = useMemo(() => {
     const opts: BenchmarkOption[] = [
@@ -407,6 +412,16 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
     onStockSelect(isin);
   };
 
+  const igToSectorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    sectorIGMapping.forEach(({ sector, groups }) => {
+      groups.forEach((group) => {
+        map[group] = sector;
+      });
+    });
+    return map;
+  }, [sectorIGMapping]);
+
   // Keep histogram margins centralized so the slider aligns perfectly with the x-axis width
   const histogramMargin = useMemo(() => ({ l: 16, r: 12, t: 5, b: 25 }), []);
 
@@ -451,6 +466,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
     setSubset(group);
     setActiveListType("subset");
     setHighlightedIG(null);
+    setHighlightedStockIsin(null);
   };
 
   const filteredStocks = useMemo(() => {
@@ -505,6 +521,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
     setScatterSector(sector);
     setSectorListFocus(sector);
     setActiveListType("sector");
+    setHighlightedStockIsin(null);
     
     setExpandedSectors((prev) => {
       const newSet = new Set(prev);
@@ -521,7 +538,17 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
     () => allIGNames[0] ?? ""
   );
 
-  const IG_COLORS = ["#d32f2f", "#ff9800", "#1976d2", "#388e3c"];
+  const IG_SHAPES = [
+    "circle",
+    "square",
+    "diamond",
+    "triangle-up",
+    "triangle-down",
+    "cross",
+    "x",
+    "triangle-left",
+    "triangle-right",
+  ];
 
   useEffect(() => {
     if (!scatterSector && allSectorNames.length) {
@@ -577,14 +604,32 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
     return dataByIG;
   }, [combinedStocks, scatterSector]);
 
+  // Map industry groups to their scatter plot colors
+  const igColorMap = useMemo(() => {
+    const scatterPalette = sectorColorConfig.scatterPlotPalette || grayPalette;
+    const map: Record<string, string> = {};
+    Object.keys(scatterData).forEach((ig, idx) => {
+      map[ig] = scatterPalette[idx % scatterPalette.length];
+    });
+    return map;
+  }, [scatterData, grayPalette]);
+
+  const subsetHeaderColor = useMemo(() => {
+    if (activeListType !== "subset" || !subset) return "text.primary";
+    // If the subset is an industry group, use its scatter plot color
+    if (igColorMap[subset]) {
+      return igColorMap[subset];
+    }
+    // Otherwise, fall back to sector color
+    const sector = igToSectorMap[subset];
+    return sector ? sectorColorMap[sector] || "#383838" : "#383838";
+  }, [activeListType, subset, igColorMap, igToSectorMap, sectorColorMap]);
+
   const [comparisonStockIsin, setComparisonStockIsin] = useState<string>(
     combinedStocks[1]?.isin ?? combinedStocks[0]?.isin ?? ""
   );
 
   const [distBenchmarkId, setDistBenchmarkId] = useState<string>("universe");
-  const [showIndustryGroups, setShowIndustryGroups] = useState<boolean>(true);
-  const [showWeightDistributions, setShowWeightDistributions] =
-    useState<boolean>(true);
 
   useImperativeHandle(ref, () => ({
     getStateConfig: () => ({
@@ -594,8 +639,6 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
       activeListType,
       highlightedStockIsin,
       highlightedIG,
-      showIndustryGroups,
-      showWeightDistributions,
       scatterSector,
       sectorListFocus,
     }),
@@ -606,8 +649,6 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
       setActiveListType(cfg.activeListType);
       setHighlightedStockIsin(cfg.highlightedStockIsin);
       setHighlightedIG(cfg.highlightedIG);
-      setShowIndustryGroups(cfg.showIndustryGroups);
-      setShowWeightDistributions(cfg.showWeightDistributions);
       setScatterSector(cfg.scatterSector);
       setSectorListFocus(cfg.sectorListFocus);
     },
@@ -861,7 +902,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                   <ListItemButton 
                     onClick={() => handleToggleSector(row.sector)}
                     sx={{
-                      borderLeft: `12px solid ${sectorColorMap[row.sector] || '#999'}`,
+                      borderLeft: `12px solid ${DRILLDOWN_SECTOR_BORDER_COLOR}`,
                       pl: 1.5,
                     }}
                   >
@@ -891,10 +932,12 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                           sx={{
                             pl: 4,
                             py: 0.5,
+                            pr: 1,
                             bgcolor: subset === group ? "#e3f2fd" : "#f9f9f9",
                             "&:hover": {
                               bgcolor: subset === group ? "#bbdefb" : "#eeeeee",
                             },
+                            borderLeft: igColorMap[group] ? `12px solid ${igColorMap[group]}60` : "12px solid transparent",
                           }}
                         >
                           <ListItemText
@@ -967,9 +1010,9 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                                 xbins: { start: 0, end: 100, size: 5 },
                                 marker: {
                                   opacity: 0.6,
-                                  color: "rgba(95, 132, 187, 0.7)",
+                                  color: "#4a4a4a",
                                   line: {
-                                    color: "rgba(0, 102, 255, 0.7)",
+                                    color: "#2a2a2a",
                                     width: 1.5,
                                   },
                                 },
@@ -1130,15 +1173,18 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                           top: 0,
                           zIndex: 2,
                           borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          borderLeft: subsetHeaderColor === "text.primary" ? "12px solid transparent" : `12px solid ${subsetHeaderColor}60`,
+                          pl: subsetHeaderColor === "text.primary" ? 2 : 1.5,
                         }}
                       >
-                        <ListItemText
-                          primary={activeListHeader}
-                          primaryTypographyProps={{
-                            variant: "subtitle2",
-                            fontWeight: 600,
-                          }}
-                        />
+                      <ListItemText
+                        primary={activeListHeader}
+                        primaryTypographyProps={{
+                          variant: "subtitle2",
+                          fontWeight: 600,
+                          color: "black",
+                        }}
+                      />
                       </ListItem>
                       <Divider />
                       {activeListItems.length === 0 ? (
@@ -1194,8 +1240,10 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                         const legendPlaceholders: any[] = [];
 
                         Object.entries(scatterData).forEach(([ig, points], idx) => {
-                          const baseColor =
-                            IG_COLORS[idx % IG_COLORS.length] || "#888888";
+                          // Use scatter plot palette for different industry groups
+                          const scatterPalette = sectorColorConfig.scatterPlotPalette || grayPalette;
+                          const igColor = scatterPalette[idx % scatterPalette.length];
+                          
                           const markerSizes = points.map((p) => {
                             if (highlightStockActive && p.isin === highlightedStockIsin) {
                               return 11;
@@ -1214,13 +1262,17 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                             }
                             return true;
                           };
-                          const markerOpacity = points.map((p) =>
-                            isHighlightedPoint(p) ? 1 : 0.3
-                          );
+                          
                           const markerColors = points.map((p) =>
-                            isHighlightedPoint(p)
-                              ? baseColor
-                              : "rgba(158, 158, 158, 1)"
+                            isHighlightedPoint(p) ? igColor : "#d3d3d3"
+                          );
+                          
+                          const markerLineColors = points.map((p) =>
+                            isHighlightedPoint(p) ? "#000" : "rgba(0, 0, 0, 0)"
+                          );
+                          
+                          const markerLineWidths = points.map((p) =>
+                            isHighlightedPoint(p) ? 1 : 0
                           );
 
                           traces.push({
@@ -1232,8 +1284,11 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                             marker: {
                               size: markerSizes,
                               color: markerColors,
-                              opacity: markerOpacity,
-                              line: { width: 0 },
+                              line: { 
+                                color: markerLineColors,
+                                width: markerLineWidths,
+                              },
+                              symbol: "circle",
                             },
                             name: ig,
                             hovertemplate:
@@ -1250,7 +1305,12 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                               mode: "markers",
                               type: "scatter",
                               name: ig,
-                              marker: { color: baseColor, size: 9 },
+                              marker: {
+                                color: igColor,
+                                size: 9,
+                                symbol: "circle",
+                                line: { color: "#000", width: 1 },
+                              },
                               showlegend: true,
                               visible: "legendonly",
                               hoverinfo: "skip",
@@ -1265,8 +1325,8 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                     }
                     layout={
                       {
-                        height: 340,
-                        margin: { l: 60, r: 20, t: 0, b: 40 },
+                        height: 476,
+                        margin: { l: 15, r: 20, t: 0, b: 40 },
                         xaxis: {
                           title: {
                             text: scatterSector || "Sector weight (%)",
@@ -1315,108 +1375,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
     );
   }
 
-  return (
-    <Box>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "1.5fr 1.5fr 1.5fr 1fr 1fr" },
-          gap: 2,
-          mb: 1.5,
-          alignItems: "center",
-        }}
-      >
-        <FormControl fullWidth size="small">
-          <InputLabel>Selected stock</InputLabel>
-          <Select
-            value={selectedStockIsin}
-            label="Selected stock"
-            onChange={(e) => onStockSelect(e.target.value)}
-          >
-            {combinedStocks.map((s) => (
-              <MenuItem key={s.isin} value={s.isin}>
-                {s.name} ({s.isin})
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl fullWidth size="small">
-          <InputLabel>Benchmark</InputLabel>
-          <Select
-            value={distBenchmarkId}
-            label="Benchmark"
-            onChange={(e) => setDistBenchmarkId(e.target.value)}
-          >
-            {benchmarkOptions.map((b) => (
-              <MenuItem key={b.id} value={b.id}>
-                {b.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl fullWidth size="small">
-          <InputLabel>Comparison Stock</InputLabel>
-          <Select
-            value={comparisonStockIsin}
-            label="Comparison Stock"
-            onChange={(e) => setComparisonStockIsin(e.target.value)}
-          >
-            {combinedStocks.map((s) => (
-              <MenuItem key={s.isin} value={s.isin}>
-                {s.name} ({s.isin})
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <Box>
-          <Typography variant="caption" sx={{ mb: 0.5, display: "block" }}>
-            Display Industry Groups
-          </Typography>
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={showIndustryGroups ? "yes" : "no"}
-            onChange={(_, val) => val && setShowIndustryGroups(val === "yes")}
-          >
-            <ToggleButton value="yes">Yes</ToggleButton>
-            <ToggleButton value="no">No</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        <Box>
-          <Typography variant="caption" sx={{ mb: 0.5, display: "block" }}>
-            Compare weights
-          </Typography>
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={showWeightDistributions ? "yes" : "no"}
-            onChange={(_, val) =>
-              val && setShowWeightDistributions(val === "yes")
-            }
-          >
-            <ToggleButton value="yes">Yes</ToggleButton>
-            <ToggleButton value="no">No</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-      </Box>
-
-      <WeightCharts
-        showWeightDistributions={showWeightDistributions}
-        showIndustryGroups={showIndustryGroups}
-        filteredSectorData={filteredSectorData}
-        distSamplesBenchBySector={distSamplesBenchBySector}
-        currentBenchmarkLabel={currentBenchmark?.label ?? "Benchmark"}
-        selectedStock={selectedStock}
-        comparisonStock={comparisonStock}
-        allIGNames={allIGNames}
-        allSectorNames={allSectorNames}
-      />
-    </Box>
-  );
+  return null;
 });
 
 export default StockListPanel;

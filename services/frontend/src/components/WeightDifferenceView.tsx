@@ -2,6 +2,8 @@ import React, { useMemo } from "react";
 import {
   Box,
   Typography,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import Plot from "react-plotly.js";
 import rawStockData from "../stock_data.json";
@@ -38,7 +40,7 @@ interface WeightDifferenceViewProps {
 }
 
 type Level = "Sectors" | "Industry Groups";
-type CategoryFilter = "All" | "Top 5" | "Top 10";
+type CategoryFilter = "All" | "Top 11";
 
 type BenchmarksStructure = Record<
   string,
@@ -242,7 +244,7 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
 
   const categoriesList = useMemo(() => {
     if (categoryFilter === "All") return allCategories;
-    const n = categoryFilter === "Top 5" ? 5 : 10;
+    const n = 11;
     const weighted = allCategories.map((cat) => ({
       cat,
       w: benchmarkWeightsAllMap[cat] ?? 0,
@@ -365,17 +367,20 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
   // Build list of active (non-baseline, non-None) inputs
   const activeInputs = useMemo(() => {
     const inputs: Array<{ key: string; weights: number[]; label: string; color: string }> = [];
-    const grayPalette = sectorColorConfig.weightDifferencePalette;
-    let colorIndex = 0;
+    
+    // Asset colors: Asset 1=blue, Asset 2=red, Benchmark 1=yellow, Benchmark 2=green
+    const ASSET1_COLOR = "rgba(66, 133, 244, 0.8)";
+    const ASSET2_COLOR = "rgba(244, 67, 54, 0.8)";
+    const BENCHMARK1_COLOR = "rgba(255, 193, 7, 0.8)";
+    const BENCHMARK2_COLOR = "rgba(76, 175, 80, 0.8)";
     
     if (baseline !== "portfolio1" && !portfolio1IsNone) {
       inputs.push({
         key: "portfolio1",
         weights: portfolio1Weights,
         label: portfolio1Label,
-        color: grayPalette[colorIndex % grayPalette.length],
+        color: ASSET1_COLOR,
       });
-      colorIndex++;
     }
     
     if (baseline !== "portfolio2" && !portfolio2IsNone) {
@@ -383,9 +388,8 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
         key: "portfolio2",
         weights: portfolio2Weights,
         label: portfolio2Label,
-        color: grayPalette[colorIndex % grayPalette.length],
+        color: ASSET2_COLOR,
       });
-      colorIndex++;
     }
     
     if (baseline !== "benchmark1" && benchmarkId !== "none") {
@@ -393,9 +397,8 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
         key: "benchmark1",
         weights: benchmarkWeights,
         label: benchmarkLabel,
-        color: grayPalette[colorIndex % grayPalette.length],
+        color: BENCHMARK1_COLOR,
       });
-      colorIndex++;
     }
     
     if (baseline !== "benchmark2" && benchmark2Id !== "none") {
@@ -403,9 +406,8 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
         key: "benchmark2",
         weights: benchmark2Weights,
         label: benchmark2Label,
-        color: grayPalette[colorIndex % grayPalette.length],
+        color: BENCHMARK2_COLOR,
       });
-      colorIndex++;
     }
     
     return inputs;
@@ -479,10 +481,16 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
     );
   }
 
+  const maxVisibleCategories = 11;
+  const rowHeight = 26;
+  const basePadding = 70;
+  const baseHeight = maxVisibleCategories * rowHeight + basePadding;
+  const plotHeight = categoriesList.length * rowHeight + basePadding;
+
   const layout = {
     barmode: "group" as const,
-    height: 413,
-    margin: { l: 150, r: 20, t: 20, b: 20 },
+    height: plotHeight,
+    margin: { l: 150, r: 20, t: 10, b: 20 },
     xaxis: {
       title: "% difference vs benchmark",
       ticksuffix: "%",
@@ -529,12 +537,44 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
 
   return (
     <Box>
-      <Plot
-        data={data as any}
-        layout={layout as any}
-        style={{ width: "100%" }}
-        config={{ displayModeBar: false, responsive: true } as any}
-      />
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          value={level}
+          onChange={(_, val) => val && setLevel(val as Level)}
+          sx={{
+            bgcolor: "white",
+            borderRadius: 1,
+            "& .MuiToggleButton-root": { fontSize: "0.7rem", px: 1, py: 0.4 },
+          }}
+        >
+          <ToggleButton value="Sectors">Sectors</ToggleButton>
+          <ToggleButton value="Industry Groups">Industry Groups</ToggleButton>
+        </ToggleButtonGroup>
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          value={categoryFilter}
+          onChange={(_, val) => val && setCategoryFilter(val as CategoryFilter)}
+          sx={{
+            bgcolor: "white",
+            borderRadius: 1,
+            "& .MuiToggleButton-root": { fontSize: "0.7rem", px: 1, py: 0.4 },
+          }}
+        >
+          <ToggleButton value="All">All</ToggleButton>
+          <ToggleButton value="Top 11">Top 11</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+      <Box sx={{ maxHeight: baseHeight, overflowY: "auto" }}>
+        <Plot
+          data={data as any}
+          layout={layout as any}
+          style={{ width: "100%" }}
+          config={{ displayModeBar: false, responsive: true } as any}
+        />
+      </Box>
     </Box>
   );
 };

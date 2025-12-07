@@ -112,6 +112,9 @@ const PortfolioBuilderOverlay: React.FC<PortfolioBuilderOverlayProps> = ({
 
     // Save to localStorage
     localStorage.setItem("portfolios", JSON.stringify(updatedPortfolios));
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new Event("portfoliosUpdated"));
 
     // Reset form
     setPortfolioName("");
@@ -126,6 +129,9 @@ const PortfolioBuilderOverlay: React.FC<PortfolioBuilderOverlayProps> = ({
     );
     setSavedPortfolios(updatedPortfolios);
     localStorage.setItem("portfolios", JSON.stringify(updatedPortfolios));
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new Event("portfoliosUpdated"));
   };
 
   const handleLoadPortfolio = (portfolio: Portfolio) => {

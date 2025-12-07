@@ -448,15 +448,16 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
 
   const sectorStockList = useMemo(() => {
     if (!sectorListFocus) return [];
+    const [lowerBound, upperBound] = cutoffRange;
     return combinedStocks
       .map((stock) => ({
         isin: stock.isin,
         name: stock.name,
         percentage: stock.sectors[sectorListFocus] ?? 0,
       }))
-      .filter((entry) => entry.percentage > 0)
+      .filter((entry) => entry.percentage > 0 && entry.percentage >= lowerBound && entry.percentage <= upperBound)
       .sort((a, b) => b.percentage - a.percentage);
-  }, [combinedStocks, sectorListFocus]);
+  }, [combinedStocks, sectorListFocus, cutoffRange]);
 
   const handleSubsetSelection = (group: string) => {
     if (subset === group) {
@@ -482,16 +483,12 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
   }, [subsetStocks, cutoffRange, sortOrder]);
 
   const filteredSectorStocks = useMemo(() => {
-    const [lowerBound, upperBound] = cutoffRange;
-    const withinBounds = sectorStockList.filter(
-      (s) => s.percentage >= lowerBound && s.percentage <= upperBound
-    );
-    return [...withinBounds].sort((a, b) =>
+    return [...sectorStockList].sort((a, b) =>
       sortOrder === "asc"
         ? a.percentage - b.percentage
         : b.percentage - a.percentage
     );
-  }, [sectorStockList, cutoffRange, sortOrder]);
+  }, [sectorStockList, sortOrder]);
 
   const subsetWeights = subsetStocks.map((s) => s.percentage);
 
@@ -615,6 +612,10 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
   }, [scatterData, grayPalette]);
 
   const subsetHeaderColor = useMemo(() => {
+    if (activeListType === "sector" && sectorListFocus) {
+      // For sector list, use gray color
+      return "#808080";
+    }
     if (activeListType !== "subset" || !subset) return "text.primary";
     // If the subset is an industry group, use its scatter plot color
     if (igColorMap[subset]) {
@@ -623,7 +624,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
     // Otherwise, fall back to sector color
     const sector = igToSectorMap[subset];
     return sector ? sectorColorMap[sector] || "#383838" : "#383838";
-  }, [activeListType, subset, igColorMap, igToSectorMap, sectorColorMap]);
+  }, [activeListType, subset, sectorListFocus, igColorMap, igToSectorMap, sectorColorMap]);
 
   const [comparisonStockIsin, setComparisonStockIsin] = useState<string>(
     combinedStocks[1]?.isin ?? combinedStocks[0]?.isin ?? ""
@@ -866,116 +867,124 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
 
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "260px minmax(0, 1fr)" },
-            gap: 2,
-            alignItems: "stretch",
-            minHeight: 380,
-          }}
-        >
-          <Paper
-            variant="outlined"
-            sx={{ p: 1.5, height: 442, display: "flex", flexDirection: "column", overflow: "hidden" }}
-          >
-            <Typography
-              variant="subtitle2"
-              sx={{ mb: 1, fontWeight: 600, textAlign: "center" }}
-            >
-              Drill-Down from Sectors to Stocks
-            </Typography>
-
-            <List
-              dense
-              disablePadding
-              sx={{
-                flex: 1,
-                overflow: "auto",
-                border: "1px solid #e0e0e0",
-                borderRadius: 1,
-              }}
-            >
-              {sectorIGMapping.map((row, idx) => (
-                <React.Fragment key={row.sector}>
-                  {idx > 0 && <Divider />}
-                  <ListItemButton 
-                    onClick={() => handleToggleSector(row.sector)}
-                    sx={{
-                      borderLeft: `12px solid ${DRILLDOWN_SECTOR_BORDER_COLOR}`,
-                      pl: 1.5,
-                    }}
-                  >
-                    <ListItemText
-                      primary={row.sector}
-                      primaryTypographyProps={{
-                        variant: "body2",
-                        fontWeight: 500,
-                      }}
-                    />
-                    {expandedSectors.has(row.sector) ? (
-                      <ExpandLess />
-                    ) : (
-                      <ExpandMore />
-                    )}
-                  </ListItemButton>
-                  <Collapse
-                    in={expandedSectors.has(row.sector)}
-                    timeout="auto"
-                    unmountOnExit
-                  >
-                    <List component="div" disablePadding dense>
-                      {row.groups.map((group) => (
-                      <ListItemButton
-                        key={group}
-                        onClick={() => handleSubsetSelection(group)}
-                          sx={{
-                            pl: 4,
-                            py: 0.5,
-                            pr: 1,
-                            bgcolor: subset === group ? "#e3f2fd" : "#f9f9f9",
-                            "&:hover": {
-                              bgcolor: subset === group ? "#bbdefb" : "#eeeeee",
-                            },
-                            borderLeft: igColorMap[group] ? `12px solid ${igColorMap[group]}60` : "12px solid transparent",
-                          }}
-                        >
-                          <ListItemText
-                            primary={group}
-                            primaryTypographyProps={{
-                              variant: "body2",
-                              fontSize: "0.85rem",
-                              fontWeight: subset === group ? 600 : 400,
-                            }}
-                          />
-                        </ListItemButton>
-                      ))}
-                    </List>
-                  </Collapse>
-                </React.Fragment>
-              ))}
-            </List>
-          </Paper>
-
+        <Paper variant="outlined" sx={{ p: 1 }}>
           <Box
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 0.5,
-              height: "100%",
-              pt: 0,
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "260px minmax(0, 1fr)" },
+              gap: 2,
+              alignItems: "stretch",
+              minHeight: 380,
             }}
           >
-            <Box sx={{ flex: "1 0 auto", minHeight: 0, mt: 0 }}>
-              <Box
+            <Box sx={{ display: "flex", flexDirection: "column" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 1, fontWeight: 600, textAlign: "center" }}
+              >
+                Sector and Industry Group Hierarchy
+              </Typography>
+
+              <List
+                dense
+                disablePadding
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                  gap: 2,
-                  alignItems: "flex-start",
+                  height: 420,
+                  overflow: "auto",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 1,
                 }}
               >
+                {sectorIGMapping.map((row, idx) => (
+                  <React.Fragment key={row.sector}>
+                    {idx > 0 && <Divider />}
+                    <ListItemButton 
+                      onClick={() => handleToggleSector(row.sector)}
+                      sx={{
+                        borderLeft: `12px solid ${DRILLDOWN_SECTOR_BORDER_COLOR}`,
+                        pl: 1.5,
+                      }}
+                    >
+                      <ListItemText
+                        primary={row.sector}
+                        primaryTypographyProps={{
+                          variant: "body2",
+                          fontWeight: 500,
+                        }}
+                      />
+                      {expandedSectors.has(row.sector) ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      )}
+                    </ListItemButton>
+                    <Collapse
+                      in={expandedSectors.has(row.sector)}
+                      timeout="auto"
+                      unmountOnExit
+                    >
+                      <List component="div" disablePadding dense>
+                        {row.groups.map((group) => (
+                        <ListItemButton
+                          key={group}
+                          onClick={() => handleSubsetSelection(group)}
+                            sx={{
+                              pl: 4,
+                              py: 0.5,
+                              pr: 1,
+                              bgcolor: subset === group ? "#e3f2fd" : "#f9f9f9",
+                              "&:hover": {
+                                bgcolor: subset === group ? "#bbdefb" : "#eeeeee",
+                              },
+                              borderLeft: igColorMap[group] ? `12px solid ${igColorMap[group]}CC` : "12px solid transparent",
+                            }}
+                          >
+                            <ListItemText
+                              primary={group}
+                              primaryTypographyProps={{
+                                variant: "body2",
+                                fontSize: "0.85rem",
+                                fontWeight: subset === group ? 600 : 400,
+                              }}
+                            />
+                          </ListItemButton>
+                        ))}
+                      </List>
+                    </Collapse>
+                  </React.Fragment>
+                ))}
+              </List>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.5,
+                height: "100%",
+                pt: 0,
+              }}
+            >
+              <Box sx={{ flex: "1 0 auto", minHeight: 0, mt: 0 }}>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                    gap: 2,
+                    alignItems: "flex-start",
+                  }}
+                >
                 <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      mb: 1,
+                      fontWeight: 600,
+                      textAlign: "center",
+                    }}
+                  >
+                    Sector or Industry Group Weights
+                  </Typography>
                   <Box
                     sx={{
                       display: "grid",
@@ -1159,7 +1168,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                   <Paper
                     variant="outlined"
                     sx={{
-                      maxHeight: 365.5,
+                      maxHeight: 310,
                       overflowY: "auto",
                       width: { xs: "100%", md: "90%" },
                     }}
@@ -1173,7 +1182,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                           top: 0,
                           zIndex: 2,
                           borderBottom: "1px solid rgba(0,0,0,0.08)",
-                          borderLeft: subsetHeaderColor === "text.primary" ? "12px solid transparent" : `12px solid ${subsetHeaderColor}60`,
+                          borderLeft: subsetHeaderColor === "text.primary" ? "12px solid transparent" : `12px solid ${subsetHeaderColor}CC`,
                           pl: subsetHeaderColor === "text.primary" ? 2 : 1.5,
                         }}
                       >
@@ -1230,14 +1239,62 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                 </Box>
 
                 <Box>
+                  {/* Custom Legend */}
+                  <Box sx={{ mb: 1 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        display: "block",
+                        textAlign: "left",
+                        mb: 0.5,
+                      }}
+                    >
+                      Industry Groups of {scatterSector}
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      {Object.keys(scatterData).map((ig, idx) => {
+                        const scatterPalette = sectorColorConfig.scatterPlotPalette || grayPalette;
+                        const igColor = scatterPalette[idx % scatterPalette.length];
+                        return (
+                          <Box
+                            key={ig}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: "50%",
+                                bgcolor: igColor,
+                              }}
+                            />
+                            <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
+                              {ig}
+                            </Typography>
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  </Box>
+
                   <Plot
                     data={
                       (() => {
                         const highlightStockActive = Boolean(highlightedStockIsin);
                         const highlightIGActive = Boolean(highlightedIG);
-                        const highlightActive = highlightStockActive || highlightIGActive;
                         const traces: any[] = [];
-                        const legendPlaceholders: any[] = [];
 
                         Object.entries(scatterData).forEach(([ig, points], idx) => {
                           // Use scatter plot palette for different industry groups
@@ -1267,14 +1324,6 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                             isHighlightedPoint(p) ? igColor : "#d3d3d3"
                           );
                           
-                          const markerLineColors = points.map((p) =>
-                            isHighlightedPoint(p) ? "#000" : "rgba(0, 0, 0, 0)"
-                          );
-                          
-                          const markerLineWidths = points.map((p) =>
-                            isHighlightedPoint(p) ? 1 : 0
-                          );
-
                           traces.push({
                             x: points.map((p) => p.x),
                             y: points.map((p) => p.y),
@@ -1284,10 +1333,6 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                             marker: {
                               size: markerSizes,
                               color: markerColors,
-                              line: { 
-                                color: markerLineColors,
-                                width: markerLineWidths,
-                              },
                               symbol: "circle",
                             },
                             name: ig,
@@ -1295,37 +1340,16 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                               "%{text}<br>" +
                               `${scatterSector}: %{x:.1f}%<br>` +
                               `${ig}: %{y:.1f}%<extra></extra>`,
-                            showlegend: !highlightActive,
+                            showlegend: false,
                           });
-
-                          if (highlightActive) {
-                            legendPlaceholders.push({
-                              x: [null],
-                              y: [null],
-                              mode: "markers",
-                              type: "scatter",
-                              name: ig,
-                              marker: {
-                                color: igColor,
-                                size: 9,
-                                symbol: "circle",
-                                line: { color: "#000", width: 1 },
-                              },
-                              showlegend: true,
-                              visible: "legendonly",
-                              hoverinfo: "skip",
-                            });
-                          }
                         });
 
-                        return highlightActive
-                          ? traces.concat(legendPlaceholders)
-                          : traces;
+                        return traces;
                       })()
                     }
                     layout={
                       {
-                        height: 476,
+                        height: 380,
                         margin: { l: 15, r: 20, t: 0, b: 40 },
                         xaxis: {
                           title: {
@@ -1353,24 +1377,18 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                             },
                           },
                         ],
-                        showlegend: true,
-                        legend: {
-                          orientation: "h",
-                          x: 0.5,
-                          y: 1.12,
-                          xanchor: "center",
-                          yanchor: "top",
-                        },
+                        showlegend: false,
                       } as any
                     }
                     config={{ displayModeBar: false, responsive: true } as any}
                     style={{ width: "100%" }}
                   />
                 </Box>
+                </Box>
               </Box>
             </Box>
           </Box>
-        </Box>
+        </Paper>
       </Box>
     );
   }

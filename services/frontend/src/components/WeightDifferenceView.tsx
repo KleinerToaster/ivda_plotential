@@ -1,9 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
   Typography,
   ToggleButtonGroup,
   ToggleButton,
+  Paper,
 } from "@mui/material";
 import Plot from "react-plotly.js";
 import rawStockData from "../stock_data.json";
@@ -62,11 +63,25 @@ interface AllBenchmarksJson {
 
 const ALL_BENCHMARKS = rawAllBenchmarks as unknown as AllBenchmarksJson;
 
+interface PortfolioStock {
+  isin: string;
+  name: string;
+  weight: number;
+}
+
+interface Portfolio {
+  id: string;
+  name: string;
+  stocks: PortfolioStock[];
+  createdAt: string;
+}
+
 type BenchmarkOption = {
   id: string;
   label: string;
-  level: "universe" | "country" | "region" | "market";
+  level: "universe" | "country" | "region" | "market" | "portfolio";
   ref?: CountryRegionMarketBenchmark;
+  portfolio?: Portfolio;
 };
 
 const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({ 
@@ -87,11 +102,53 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
 }) => {
   const hasData = STOCKS.length > 0;
 
+  // State to trigger re-render when portfolios change
+  const [portfoliosUpdated, setPortfoliosUpdated] = useState(0);
+  
+  // Listen for portfolio changes
+  useEffect(() => {
+    const handlePortfoliosUpdate = () => {
+      setPortfoliosUpdated(prev => prev + 1);
+    };
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "portfolios") {
+        setPortfoliosUpdated(prev => prev + 1);
+      }
+    };
+    
+    window.addEventListener("portfoliosUpdated", handlePortfoliosUpdate);
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("portfoliosUpdated", handlePortfoliosUpdate);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
   const benchmarkOptions: BenchmarkOption[] = useMemo(() => {
     const opts: BenchmarkOption[] = [
       { id: "none", label: "None (Portfolio 1 vs Portfolio 2)", level: "universe" },
       { id: "universe", label: "Universe average", level: "universe" },
     ];
+
+    // Load saved portfolios from localStorage
+    try {
+      const savedPortfoliosJson = localStorage.getItem("portfolios");
+      if (savedPortfoliosJson) {
+        const portfolios = JSON.parse(savedPortfoliosJson) as Portfolio[];
+        portfolios.forEach((portfolio) => {
+          opts.push({
+            id: `portfolio-${portfolio.id}`,
+            label: `Portfolio: ${portfolio.name}`,
+            level: "portfolio",
+            portfolio: portfolio,
+          });
+        });
+      }
+    } catch (e) {
+      console.error("Failed to load saved portfolios", e);
+    }
 
     Object.entries(ALL_BENCHMARKS.countries).forEach(([code, bm]) => {
       opts.push({
@@ -121,7 +178,7 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
     });
 
     return opts;
-  }, []);
+  }, [portfoliosUpdated]);
 
   const currentBenchmark = useMemo(
     () =>
@@ -196,9 +253,43 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
     return avg;
   }, [allCategories, level, hasData]);
 
+  // Helper function to calculate portfolio weights from constituent stocks
+  const calculatePortfolioWeights = (portfolio: Portfolio, cats: string[]): Record<string, number> => {
+    const weights: Record<string, number> = {};
+    cats.forEach((cat) => {
+      weights[cat] = 0;
+    });
+
+    // Calculate weighted average for each category
+    portfolio.stocks.forEach((portfolioStock) => {
+      const stock = STOCKS.find((s) => s.isin === portfolioStock.isin);
+      if (!stock) return;
+
+      const weightFraction = portfolioStock.weight / 100; // Convert percentage to fraction
+      cats.forEach((cat) => {
+        const categoryWeight =
+          level === "Sectors"
+            ? stock.sectors[cat] || 0
+            : stock.industryGroups[cat] || 0;
+        weights[cat] += categoryWeight * weightFraction;
+      });
+    });
+
+    return weights;
+  };
+
   const benchmarkWeightsAllMap = useMemo(() => {
     const map: Record<string, number> = {};
     if (!allCategories.length) return map;
+
+    // Handle portfolio benchmarks
+    if (currentBenchmark?.level === "portfolio" && currentBenchmark.portfolio) {
+      const portfolioWeights = calculatePortfolioWeights(currentBenchmark.portfolio, allCategories);
+      allCategories.forEach((cat) => {
+        map[cat] = portfolioWeights[cat] ?? 0;
+      });
+      return map;
+    }
 
     if (
       !currentBenchmark ||
@@ -294,6 +385,15 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
   const benchmark2WeightsAllMap = useMemo(() => {
     const map: Record<string, number> = {};
     if (!allCategories.length) return map;
+
+    // Handle portfolio benchmarks
+    if (currentBenchmark2?.level === "portfolio" && currentBenchmark2.portfolio) {
+      const portfolioWeights = calculatePortfolioWeights(currentBenchmark2.portfolio, allCategories);
+      allCategories.forEach((cat) => {
+        map[cat] = portfolioWeights[cat] ?? 0;
+      });
+      return map;
+    }
 
     if (
       !currentBenchmark2 ||
@@ -537,44 +637,52 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
 
   return (
     <Box>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={level}
-          onChange={(_, val) => val && setLevel(val as Level)}
-          sx={{
-            bgcolor: "white",
-            borderRadius: 1,
-            "& .MuiToggleButton-root": { fontSize: "0.7rem", px: 1, py: 0.4 },
-          }}
-        >
-          <ToggleButton value="Sectors">Sectors</ToggleButton>
-          <ToggleButton value="Industry Groups">Industry Groups</ToggleButton>
-        </ToggleButtonGroup>
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={categoryFilter}
-          onChange={(_, val) => val && setCategoryFilter(val as CategoryFilter)}
-          sx={{
-            bgcolor: "white",
-            borderRadius: 1,
-            "& .MuiToggleButton-root": { fontSize: "0.7rem", px: 1, py: 0.4 },
-          }}
-        >
-          <ToggleButton value="All">All</ToggleButton>
-          <ToggleButton value="Top 11">Top 11</ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-      <Box sx={{ maxHeight: baseHeight, overflowY: "auto" }}>
-        <Plot
-          data={data as any}
-          layout={layout as any}
-          style={{ width: "100%" }}
-          config={{ displayModeBar: false, responsive: true } as any}
-        />
-      </Box>
+      <Paper variant="outlined" sx={{ p: 1 }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1, alignItems: "center" }}>
+          <Typography variant="caption" sx={{ fontSize: "0.75rem", mr: 0.5 }}>
+            Display Industry Groups:
+          </Typography>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={level}
+            onChange={(_, val) => val && setLevel(val as Level)}
+            sx={{
+              bgcolor: "white",
+              borderRadius: 1,
+              "& .MuiToggleButton-root": { fontSize: "0.7rem", px: 1, py: 0.4 },
+            }}
+          >
+            <ToggleButton value="Industry Groups">Yes</ToggleButton>
+            <ToggleButton value="Sectors">No</ToggleButton>
+          </ToggleButtonGroup>
+          <Typography variant="caption" sx={{ fontSize: "0.75rem", ml: 1, mr: 0.5 }}>
+            Display:
+          </Typography>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={categoryFilter}
+            onChange={(_, val) => val && setCategoryFilter(val as CategoryFilter)}
+            sx={{
+              bgcolor: "white",
+              borderRadius: 1,
+              "& .MuiToggleButton-root": { fontSize: "0.7rem", px: 1, py: 0.4 },
+            }}
+          >
+            <ToggleButton value="All">All</ToggleButton>
+            <ToggleButton value="Top 11">Top 11</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+        <Box sx={{ maxHeight: baseHeight, overflowY: "auto" }}>
+          <Plot
+            data={data as any}
+            layout={layout as any}
+            style={{ width: "100%" }}
+            config={{ displayModeBar: false, responsive: true } as any}
+          />
+        </Box>
+      </Paper>
     </Box>
   );
 };

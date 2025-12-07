@@ -1,5 +1,6 @@
 import React from "react";
 import Plot from "react-plotly.js";
+import { Box, Typography, ToggleButtonGroup, ToggleButton, Paper } from "@mui/material";
 
 const median = (vals: number[]): number => {
   const valid = vals.filter((v) => !Number.isNaN(v)).sort((a, b) => a - b);
@@ -222,6 +223,8 @@ interface WeightChartsProps {
   } | null;
   showWeightDistributions: boolean;
   showIndustryGroups: boolean;
+  setShowWeightDistributions: (value: boolean) => void;
+  setShowIndustryGroups: (value: boolean) => void;
   allIGNames: string[];
   allSectorNames: string[];
 }
@@ -234,13 +237,60 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
   comparisonStock,
   showWeightDistributions,
   showIndustryGroups,
+  setShowWeightDistributions,
+  setShowIndustryGroups,
   allIGNames,
   allSectorNames,
 }) => {
   const emptyStockName = "Selected stock";
   const emptyCompName = "Comparison stock";
 
-  if (!showWeightDistributions) {
+  return (
+    <Box>
+      <Paper variant="outlined" sx={{ p: 1 }}>
+        <Box sx={{ display: "flex", gap: 2, mb: 1, alignItems: "center" }}>
+          <Typography variant="caption" sx={{ fontSize: "0.75rem", minWidth: "fit-content" }}>
+            Display Industry Groups
+          </Typography>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={showIndustryGroups ? "yes" : "no"}
+            onChange={(_, val) => val && setShowIndustryGroups(val === "yes")}
+            sx={{
+              '& .MuiToggleButton-root': {
+                py: 0.3,
+                px: 1.2,
+                fontSize: "0.7rem",
+              }
+            }}
+          >
+            <ToggleButton value="yes">Yes</ToggleButton>
+            <ToggleButton value="no">No</ToggleButton>
+          </ToggleButtonGroup>
+
+          <Typography variant="caption" sx={{ fontSize: "0.75rem", minWidth: "fit-content", ml: 2 }}>
+            Compare weights
+          </Typography>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={showWeightDistributions ? "yes" : "no"}
+            onChange={(_, val) => val && setShowWeightDistributions(val === "yes")}
+            sx={{
+              '& .MuiToggleButton-root': {
+                py: 0.3,
+                px: 1.2,
+                fontSize: "0.7rem",
+              }
+            }}
+          >
+            <ToggleButton value="yes">Yes</ToggleButton>
+            <ToggleButton value="no">No</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      {(() => {
+        if (!showWeightDistributions) {
     if (showIndustryGroups) {
       // Stacked bar chart showing industry group breakdown within each sector
       const SECTOR_TO_INDUSTRY_GROUPS: Record<string, string[]> = {
@@ -422,13 +472,13 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
       });
 
       return (
-        <Plot
-          data={traces}
-          layout={
-            {
-              barmode: "stack",
-              height: 450,
-              margin: { l: 60, r: 20, t: 45, b: 100 },
+          <Plot
+            data={traces}
+            layout={
+              {
+                barmode: "stack",
+                height: 380,
+                margin: { l: 60, r: 20, t: 45, b: 100 },
               yaxis: {
                 title: { text: "" },
                 range: [-100, 100],  // Extended range to show bars below axis
@@ -512,9 +562,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
     
     // Original sector-only view (showIndustryGroups = false)
     return (
-      <Plot
-        data={
-          (() => {
+        <Plot
+          data={
+            (() => {
             const traces: any[] = [];
 
             traces.push({
@@ -765,12 +815,12 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
     }
 
     return (
-      <Plot
-        data={traces}
-        layout={{
-          barmode: "group",
-          height: 450,
-          margin: { l: 60, r: 20, t: 45, b: 100 },
+        <Plot
+          data={traces}
+          layout={{
+            barmode: "group",
+            height: 380,
+            margin: { l: 60, r: 20, t: 45, b: 100 },
           yaxis: {
             title: { text: "" },
             range: [-100, 100],
@@ -944,12 +994,12 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
   }
 
   return (
-    <Plot
-      data={traces}
-      layout={{
-        barmode: "group",
-        height: 300,
-        margin: { l: 60, r: 20, t: 45, b: 100 },
+      <Plot
+        data={traces}
+        layout={{
+          barmode: "group",
+          height: 300,
+          margin: { l: 60, r: 20, t: 45, b: 100 },
         yaxis: {
           title: { text: "Weight (%)" },
           range: [0, 100],
@@ -978,10 +1028,12 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
         shapes,
         showlegend: false,
       } as any}
-      config={{ displayModeBar: false, responsive: true } as any}
-      style={{ width: "100%" }}
-    />
+        config={{ displayModeBar: false, responsive: true } as any}
+        style={{ width: "100%" }}
+      />
   );
-};
-
-export default WeightCharts;
+      })()}
+      </Paper>
+    </Box>
+  );
+};export default WeightCharts;

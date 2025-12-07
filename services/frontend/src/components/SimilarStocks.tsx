@@ -387,7 +387,10 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({
 
   const xs = layoutNodes.map((n) => n.x);
   const ys = layoutNodes.map((n) => n.y);
-  const labels = layoutNodes.map((n) => n.label);
+  const labels = layoutNodes.map((n) => {
+    const stock = stocks.find((s) => s.isin === n.id);
+    return stock?.name || n.label;
+  });
   
   const colors = layoutNodes.map((n) => {
     if (n.isFocal) return colorMode === "color" ? "firebrick" : "#303030";
@@ -491,7 +494,10 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({
           },
           opacity: 1,
           xref: 'x',
-          yref: 'y'
+          yref: 'y',
+          label: stock.name,
+          hoverinfo: 'text',
+          hovertext: stock.name
         });
 
         currentAngle = endAngle;
@@ -510,12 +516,15 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({
           color: node.isFocal ? (colorMode === "color" ? 'firebrick' : '#303030') : '#333333',
           width: node.isFocal ? 3 : 1.5
         },
-        fillcolor: 'rgba(0,0,0,0)'
+        fillcolor: 'rgba(0,0,0,0)',
+        label: stock.name,
+        hoverinfo: 'text',
+        hovertext: stock.name
       });
     });
 
     return shapes;
-  }, [layoutNodes, stocks, allSectorColorMap]);
+  }, [layoutNodes, stocks, allSectorColorMap, colorMode]);
 
   // Create legend traces for all sectors in the dataset
   const legendTraces = useMemo(() => {
@@ -535,25 +544,100 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({
   }, [allSectorsForLegend, allSectorColorMap]);
 
   return (
-    <Box>
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 2, alignItems: "start" }}>
-        {/* Plot area */}
-        <Paper variant="outlined" sx={{ p: 1 }}>
+    <Box sx={{ mt: 2 }}>
+      <Paper variant="outlined" sx={{ p: 1 }}>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+          {/* Left column: buttons and legend */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {/* Toggle buttons */}
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {/* Color mode toggle */}
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={colorMode}
+                onChange={(_, val) => val && setColorMode(val as "color" | "gray")}
+                orientation="vertical"
+                sx={{ 
+                  '& .MuiToggleButton-root': {
+                    py: 0.4,
+                    px: 1,
+                    fontSize: "0.7rem",
+                    lineHeight: 1.2,
+                  }
+                }}
+              >
+                <ToggleButton value="color">Color</ToggleButton>
+                <ToggleButton value="gray">Grayscale</ToggleButton>
+              </ToggleButtonGroup>
+
+              {/* View mode toggle */}
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={viewMode}
+                onChange={(_, val) => val && setViewMode(val as "network" | "barchart")}
+                orientation="vertical"
+                sx={{ 
+                  '& .MuiToggleButton-root': {
+                    py: 0.4,
+                    px: 1,
+                    fontSize: "0.7rem",
+                    lineHeight: 1.2,
+                  }
+                }}
+              >
+                <ToggleButton value="network">Network View</ToggleButton>
+                <ToggleButton value="barchart">Top 10 Sector Weights</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+
+            {/* Custom Legend */}
+            <Box sx={{ p: 1, border: "1px solid rgba(0, 0, 0, 0.12)", borderRadius: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1 }}>
+                Sectors
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                {allSectorsForLegend.map((sector) => (
+                  <Box key={sector} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        backgroundColor: allSectorColorMap[sector] || "grey",
+                        border: "1.5px solid #333333",
+                        borderRadius: 0.5,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ fontSize: "0.7rem", lineHeight: 1.2 }}>
+                      {sector}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Right column: Plot area */}
+          <Box sx={{ flex: 1 }}>
         {viewMode === "network" ? (
           <Plot
           data={[...edgeTraces]}
           layout={
             {
-              height: 300,
+              width: 600,
+              height: 327,
               margin: { l: 10, r: 10, t: 20, b: 10 },
               xaxis: { visible: false, range: [-1.2, 1.2] },
-              yaxis: { visible: false, range: [-1.2, 1.2], scaleanchor: "x" },
+              yaxis: { visible: false, range: [-1.2, 1.2], scaleanchor: "x", scaleratio: 1 },
               showlegend: false,
               shapes: pieTraces,
+              hovermode: 'closest'
             } as any
           }
-          config={{ displayModeBar: false, responsive: true } as any}
-          style={{ width: "100%" }}
+          config={{ displayModeBar: false, responsive: false } as any}
+          style={{ width: "600px", height: "327px" }}
         />
         ) : (() => {
           const allSectors = sectorOrderConfig.orderedSectors;
@@ -592,7 +676,7 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({
               layout={
                 {
                   barmode: "stack",
-                  height: 300,
+                  height: 327,
                   margin: { l: 220, r: 20, t: 20, b: 60 },
                   xaxis: {
                     title: { text: "Weight (%)" },
@@ -614,79 +698,9 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({
             />
           );
         })()}
-      </Paper>
-
-        {/* Controls and Legend column */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 180 }}>
-          {/* Toggle buttons */}
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={viewMode}
-            onChange={(_, val) => val && setViewMode(val as "network" | "barchart")}
-            orientation="vertical"
-            sx={{ 
-              alignSelf: "flex-end",
-              '& .MuiToggleButton-root': {
-                py: 0.4,
-                px: 1,
-                fontSize: "0.7rem",
-                lineHeight: 1.2,
-              }
-            }}
-          >
-            <ToggleButton value="network">Network View</ToggleButton>
-            <ToggleButton value="barchart">Top 10 Sector Weights</ToggleButton>
-          </ToggleButtonGroup>
-
-          {/* Color mode toggle */}
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={colorMode}
-            onChange={(_, val) => val && setColorMode(val as "color" | "gray")}
-            orientation="vertical"
-            sx={{ 
-              alignSelf: "flex-end",
-              '& .MuiToggleButton-root': {
-                py: 0.4,
-                px: 1,
-                fontSize: "0.7rem",
-                lineHeight: 1.2,
-              }
-            }}
-          >
-            <ToggleButton value="color">Color</ToggleButton>
-            <ToggleButton value="gray">Grayscale</ToggleButton>
-          </ToggleButtonGroup>
-
-          {/* Custom Legend */}
-          <Paper variant="outlined" sx={{ p: 1.5 }}>
-            <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1 }}>
-              Sectors
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-              {allSectorsForLegend.map((sector) => (
-                <Box key={sector} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <Box
-                    sx={{
-                      width: 16,
-                      height: 16,
-                      backgroundColor: allSectorColorMap[sector] || "grey",
-                      border: "1.5px solid #333333",
-                      borderRadius: 0.5,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Typography variant="caption" sx={{ fontSize: "0.7rem", lineHeight: 1.2 }}>
-                    {sector}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </Paper>
+          </Box>
         </Box>
-      </Box>
+      </Paper>
     </Box>
   );
 };

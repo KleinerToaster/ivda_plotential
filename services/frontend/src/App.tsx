@@ -43,11 +43,25 @@ interface AllBenchmarksJson {
 
 const ALL_BENCHMARKS = rawAllBenchmarks as unknown as AllBenchmarksJson;
 
+interface PortfolioStock {
+  isin: string;
+  name: string;
+  weight: number;
+}
+
+interface Portfolio {
+  id: string;
+  name: string;
+  stocks: PortfolioStock[];
+  createdAt: string;
+}
+
 type BenchmarkOption = {
   id: string;
   label: string;
-  level: "universe" | "country" | "region" | "market";
+  level: "universe" | "country" | "region" | "market" | "portfolio";
   ref?: CountryRegionMarketBenchmark;
+  portfolio?: Portfolio;
 };
 
 type Level = "Sectors" | "Industry Groups";
@@ -93,10 +107,10 @@ function App() {
   
   // Similar Stocks controls
   const [featureType, setFeatureType] = useState<"both" | "sectors" | "industryGroups">("both");
-  const [k, setK] = useState<number>(20);
-  const [kPeer, setKPeer] = useState<number>(4);
+  const [k, setK] = useState<number>(50);
+  const [kPeer, setKPeer] = useState<number>(10);
   const [iterations, setIterations] = useState<number>(500);
-  const [coolingRate, setCoolingRate] = useState<number>(1.0);
+  const [coolingRate, setCoolingRate] = useState<number>(1.5);
 
   // WeightCharts controls
   const [comparisonStockIsin, setComparisonStockIsin] = useState<string>(
@@ -111,11 +125,53 @@ function App() {
     name: s.name,
   }));
   
+  // State to trigger re-render when portfolios change
+  const [portfoliosUpdated, setPortfoliosUpdated] = React.useState(0);
+  
+  // Listen for portfolio changes (both storage events and custom events)
+  React.useEffect(() => {
+    const handlePortfoliosUpdate = () => {
+      setPortfoliosUpdated(prev => prev + 1);
+    };
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "portfolios") {
+        setPortfoliosUpdated(prev => prev + 1);
+      }
+    };
+    
+    window.addEventListener("portfoliosUpdated", handlePortfoliosUpdate);
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("portfoliosUpdated", handlePortfoliosUpdate);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+  
   const benchmarkOptions: BenchmarkOption[] = React.useMemo(() => {
     const opts: BenchmarkOption[] = [
       { id: "none", label: "None", level: "universe" },
       { id: "universe", label: "Universe average", level: "universe" },
     ];
+
+    // Load saved portfolios from localStorage
+    try {
+      const savedPortfoliosJson = localStorage.getItem("portfolios");
+      if (savedPortfoliosJson) {
+        const portfolios = JSON.parse(savedPortfoliosJson) as Portfolio[];
+        portfolios.forEach((portfolio) => {
+          opts.push({
+            id: `portfolio-${portfolio.id}`,
+            label: `Portfolio: ${portfolio.name}`,
+            level: "portfolio",
+            portfolio: portfolio,
+          });
+        });
+      }
+    } catch (e) {
+      console.error("Failed to load saved portfolios", e);
+    }
 
     Object.entries(ALL_BENCHMARKS.countries).forEach(([code, bm]) => {
       opts.push({
@@ -145,7 +201,7 @@ function App() {
     });
 
     return opts;
-  }, []);
+  }, [portfoliosUpdated]);
   
   const drilldownRef = useRef<StockListPanelHandle | null>(null);
   const [stateName, setStateName] = useState("");
@@ -318,11 +374,11 @@ function App() {
   }, [filteredSectorData.sectors, currentDistBenchmark]);
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, bgcolor: "#f5f5f5" }}>
       <AppBar
         position="static"
         sx={{
-          backgroundColor: "#d1d1d1",
+          backgroundColor: "#e0e0e0",
         }}
       >
         <Toolbar sx={{ minHeight: 80, py: 0.5, gap: 1, alignItems: "center", justifyContent: "space-between" }}>
@@ -333,18 +389,8 @@ function App() {
             
             <Divider orientation="vertical" sx={{ bgcolor: 'white', width: '0.4px', alignSelf: 'stretch', mx: 1 }} />
             
-            {/* Utility Buttons Box */}
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 450 }}>
-            {/* Top row: utility buttons */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() => setShowPortfolioBuilder(true)}
-                sx={{ color: "black", border: "1px solid rgba(0, 0, 0, 0.45)", fontSize: "0.75rem", px: 1.5 }}
-              >
-                Portfolio Builder
-              </Button>
+            {/* All controls in single horizontal row */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "nowrap" }}>
               <Button
                 color="inherit"
                 size="small"
@@ -353,10 +399,17 @@ function App() {
               >
                 Data Validity
               </Button>
-            </Box>
-            
-            {/* Bottom row: state controls */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "nowrap" }}>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => setShowPortfolioBuilder(true)}
+                sx={{ color: "black", border: "1px solid rgba(0, 0, 0, 0.45)", fontSize: "0.75rem", px: 1.5 }}
+              >
+                Portfolio Builder
+              </Button>
+              
+              <Divider orientation="vertical" sx={{ bgcolor: 'white', width: '0.4px', height: '24px', mx: 0.5 }} />
+              
               <TextField
                 value={stateName}
                 onChange={(e) => setStateName(e.target.value)}
@@ -364,7 +417,7 @@ function App() {
                 label=""
                 placeholder="State name"
                 inputProps={{ maxLength: 8 }}
-                sx={{ width: 100, bgcolor: "white", borderRadius: 1 }}
+                sx={{ width: 140, bgcolor: "white", borderRadius: 1, ml: 5 }}
               />
               <Button
                 color="inherit"
@@ -408,74 +461,7 @@ function App() {
                 </>
               )}
             </Box>
-          </Box>
             
-            <Divider orientation="vertical" sx={{ bgcolor: 'white', width: '0.4px', alignSelf: 'stretch', mx: 1 }} />
-              
-              {/* Similar Stocks controls */}
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-              <ToggleButtonGroup
-                exclusive
-                size="small"
-                value={featureType}
-                onChange={(_, val) => val && setFeatureType(val as "both" | "sectors" | "industryGroups")}
-                sx={{ bgcolor: "white", borderRadius: 1, "& .MuiToggleButton-root": { fontSize: "0.7rem", px: 1, py: 0.4 } }}
-              >
-                <ToggleButton value="both">Both</ToggleButton>
-                <ToggleButton value="sectors">Sectors</ToggleButton>
-                <ToggleButton value="industryGroups">Ind. Groups</ToggleButton>
-              </ToggleButtonGroup>
-              
-              <Box sx={{ display: "flex", gap: 0.5 }}>
-                <Box>
-                  <Typography variant="caption" sx={{ fontSize: "0.65rem", color: "black", display: "block" }}>K: {k}</Typography>
-                  <TextField
-                    type="number"
-                    value={k}
-                    onChange={(e) => setK(Number(e.target.value))}
-                    size="small"
-                    inputProps={{ min: 5, max: 150, step: 1, style: { fontSize: "0.7rem", padding: "2px 4px" } }}
-                    sx={{ width: 60, bgcolor: "white", borderRadius: 1, "& .MuiInputBase-root": { height: "24px" } }}
-                  />
-                </Box>
-                
-                <Box>
-                  <Typography variant="caption" sx={{ fontSize: "0.65rem", color: "black", display: "block" }}>Iter: {iterations}</Typography>
-                  <TextField
-                    type="number"
-                    value={iterations}
-                    onChange={(e) => setIterations(Number(e.target.value))}
-                    size="small"
-                    inputProps={{ min: 100, max: 1000, step: 50, style: { fontSize: "0.7rem", padding: "2px 4px" } }}
-                    sx={{ width: 60, bgcolor: "white", borderRadius: 1, "& .MuiInputBase-root": { height: "24px" } }}
-                  />
-                </Box>
-                
-                <Box>
-                  <Typography variant="caption" sx={{ fontSize: "0.65rem", color: "black", display: "block" }}>Peer: {kPeer}</Typography>
-                  <TextField
-                    type="number"
-                    value={kPeer}
-                    onChange={(e) => setKPeer(Number(e.target.value))}
-                    size="small"
-                    inputProps={{ min: 0, max: 10, step: 1, style: { fontSize: "0.7rem", padding: "2px 4px" } }}
-                    sx={{ width: 60, bgcolor: "white", borderRadius: 1, "& .MuiInputBase-root": { height: "24px" } }}
-                  />
-                </Box>
-                
-                <Box>
-                  <Typography variant="caption" sx={{ fontSize: "0.65rem", color: "black", display: "block" }}>Cool: {coolingRate.toFixed(1)}</Typography>
-                  <TextField
-                    type="number"
-                    value={coolingRate}
-                    onChange={(e) => setCoolingRate(Number(e.target.value))}
-                    size="small"
-                    inputProps={{ min: 0.5, max: 2.0, step: 0.1, style: { fontSize: "0.7rem", padding: "2px 4px" } }}
-                    sx={{ width: 60, bgcolor: "white", borderRadius: 1, "& .MuiInputBase-root": { height: "24px" } }}
-                  />
-                </Box>
-              </Box>
-            </Box>
           </Box>
           
           {/* Portfolio and Benchmark Controls */}
@@ -554,7 +540,7 @@ function App() {
                       bgcolor: "white",
                       borderRadius: 1,
                       "& .MuiOutlinedInput-root": {
-                        bgcolor: baseline === "portfolio1" ? "rgba(66, 133, 244, 0.4)" : "rgba(66, 133, 244, 0.18)",
+                        bgcolor: baseline === "portfolio1" ? "rgba(66, 133, 244, 0.6)" : "rgba(66, 133, 244, 0.35)",
                       },
                     }}
                   />
@@ -606,7 +592,7 @@ function App() {
                       bgcolor: "white",
                       borderRadius: 1,
                       "& .MuiOutlinedInput-root": {
-                        bgcolor: baseline === "portfolio2" ? "rgba(244, 67, 54, 0.4)" : "rgba(244, 67, 54, 0.18)",
+                        bgcolor: baseline === "portfolio2" ? "rgba(244, 67, 54, 0.6)" : "rgba(244, 67, 54, 0.35)",
                       },
                     }}
                   />
@@ -647,7 +633,7 @@ function App() {
                       bgcolor: "white",
                       borderRadius: 1,
                       "& .MuiOutlinedInput-root": {
-                        bgcolor: baseline === "benchmark1" ? "rgba(255, 193, 7, 0.45)" : "rgba(255, 193, 7, 0.2)",
+                        bgcolor: baseline === "benchmark1" ? "rgba(255, 193, 7, 0.65)" : "rgba(255, 193, 7, 0.4)",
                       },
                     }}
                   />
@@ -688,7 +674,7 @@ function App() {
                       bgcolor: "white",
                       borderRadius: 1,
                       "& .MuiOutlinedInput-root": {
-                        bgcolor: baseline === "benchmark2" ? "rgba(76, 175, 80, 0.4)" : "rgba(76, 175, 80, 0.18)",
+                        bgcolor: baseline === "benchmark2" ? "rgba(76, 175, 80, 0.6)" : "rgba(76, 175, 80, 0.35)",
                       },
                     }}
                   />
@@ -724,10 +710,6 @@ function App() {
         <Box
           sx={{
             pr: { md: 3 },
-            borderRight: {
-              xs: "none",
-              md: "2px solid #555",
-            },
             display: "flex",
             flexDirection: "column",
             height: "100%",
@@ -743,13 +725,6 @@ function App() {
                 />
             </Box>
           </Box>
-
-          <Box
-            sx={{
-              borderTop: "2px solid #000000ff",
-              my: 1,
-            }}
-          />
 
           <Box sx={{ flexGrow: 1 }}>
             <StockListPanel 
@@ -773,7 +748,6 @@ function App() {
           sx={{
             width: "100%",
             maxWidth: 900,
-            ml: { md: 0.2 },
           }}
         >
           <WeightDifferenceView 
@@ -793,43 +767,13 @@ function App() {
             setCategoryFilter={setCategoryFilter}
           />
 
-          <Divider sx={{ my: 2 }} />
-
-          <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center" }}>
-            <Box>
-              <Typography variant="caption" sx={{ mb: 0.5, display: "block", fontSize: "0.8rem" }}>
-                Display Industry Groups
-              </Typography>
-              <ToggleButtonGroup
-                exclusive
-                size="small"
-                value={showIndustryGroups ? "yes" : "no"}
-                onChange={(_, val) => val && setShowIndustryGroups(val === "yes")}
-              >
-                <ToggleButton value="yes">Yes</ToggleButton>
-                <ToggleButton value="no">No</ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-
-            <Box>
-              <Typography variant="caption" sx={{ mb: 0.5, display: "block", fontSize: "0.8rem" }}>
-                Compare weights
-              </Typography>
-              <ToggleButtonGroup
-                exclusive
-                size="small"
-                value={showWeightDistributions ? "yes" : "no"}
-                onChange={(_, val) => val && setShowWeightDistributions(val === "yes")}
-              >
-                <ToggleButton value="yes">Yes</ToggleButton>
-                <ToggleButton value="no">No</ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-          </Box>
+          <Box sx={{ mt: 3 }} />
 
           <WeightCharts
             showWeightDistributions={showWeightDistributions}
             showIndustryGroups={showIndustryGroups}
+            setShowWeightDistributions={setShowWeightDistributions}
+            setShowIndustryGroups={setShowIndustryGroups}
             filteredSectorData={filteredSectorData}
             distSamplesBenchBySector={distSamplesBenchBySector}
             currentBenchmarkLabel={currentDistBenchmark?.label ?? "Benchmark"}

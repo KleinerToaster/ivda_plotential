@@ -194,7 +194,7 @@ const createIndustryGroupBars = (
       offsetgroup: offsetGroup,
       width: 0.35,
       base: [-cumulative],
-      hovertemplate: `${item.ig}: ${item.weight.toFixed(1)}% of portfolio<br>(${rescaledHeight.toFixed(1)}% of ${sectorName})<extra></extra>`,
+      hovertemplate: `${item.ig}: ${item.weight.toFixed(1)}% of stock<br>(${rescaledHeight.toFixed(1)}% of ${sectorName})<extra></extra>`,
       showlegend: false,
     });
     

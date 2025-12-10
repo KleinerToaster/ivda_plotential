@@ -407,7 +407,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
             offsetgroup: "stock",
             width: 0.55,
             base: [-cumulative],  // Negative base to stack downward
-            hovertemplate: `${item.ig}: ${item.weight.toFixed(1)}% of portfolio<br>(${rescaledHeight.toFixed(1)}% of ${sector})<extra></extra>`,
+            hovertemplate: `${item.ig}: ${item.weight.toFixed(1)}% of stock<br>(${rescaledHeight.toFixed(1)}% of ${sector})<extra></extra>`,
             showlegend: false,
           });
           

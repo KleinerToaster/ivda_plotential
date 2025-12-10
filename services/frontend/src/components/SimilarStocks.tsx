@@ -513,8 +513,8 @@ const SimilarStocks: React.FC<SimilarStocksProps> = ({
         x1: centerX + pieSize,
         y1: centerY + pieSize,
         line: {
-          color: node.isFocal ? (colorMode === "color" ? 'firebrick' : '#303030') : '#333333',
-          width: node.isFocal ? 3 : 1.5
+          color: node.isFocal ? 'firebrick' : '#333333',
+          width: node.isFocal ? 4 : 1.5
         },
         fillcolor: 'rgba(0,0,0,0)',
         label: stock.name,

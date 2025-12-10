@@ -1,6 +1,7 @@
 import React from "react";
 import Plot from "react-plotly.js";
 import { Box, Typography, ToggleButtonGroup, ToggleButton, Paper } from "@mui/material";
+import { Opacity } from "@mui/icons-material";
 
 const median = (vals: number[]): number => {
   const valid = vals.filter((v) => !Number.isNaN(v)).sort((a, b) => a - b);
@@ -105,18 +106,19 @@ const createDistributionCurve = (
   samples: number[],
   sectorLabel: string,
   benchmarkLabel: string,
-  curveWidth: number = 0.35
+  barWidth: number = 0.65
 ) => {
   if (!samples.length) return null;
   
   const { densities, ys } = calculateKernelDensity(samples);
   const maxD = Math.max(...densities) || 1;
   
+  const halfBarWidth = barWidth / 2;
   const curveX: number[] = [];
   const curveY: number[] = [];
   densities.forEach((d, i) => {
-    const bow = (d / maxD) * curveWidth;
-    curveX.push(xCenter - 0.175 + bow);
+    const bow = (d / maxD) * halfBarWidth;
+    curveX.push(xCenter - halfBarWidth + bow + halfBarWidth);
     curveY.push(ys[i]);
   });
   
@@ -248,6 +250,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
   return (
     <Box>
       <Paper variant="outlined" sx={{ p: 1 }}>
+        <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#333", mb: 1 }}>
+          Stock Level Absolute Category Weights
+        </Typography>
         <Box sx={{ display: "flex", gap: 2, mb: 1, alignItems: "center" }}>
           <Typography variant="caption" sx={{ fontSize: "0.75rem", minWidth: "fit-content" }}>
             Display Industry Groups
@@ -289,6 +294,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
             <ToggleButton value="no">No</ToggleButton>
           </ToggleButtonGroup>
         </Box>
+      <Box sx={{ height: 335, overflow: "hidden" }}>
       {(() => {
         if (!showWeightDistributions) {
     if (showIndustryGroups) {
@@ -350,7 +356,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           name: sector,
           marker: { color: "rgba(66, 133, 244, 0.8)" },
           offsetgroup: "stock",
-          width: 0.35,
+          width: 0.5,
           hovertemplate: `${sector}: ${sectorWeight.toFixed(1)}%<extra></extra>`,
           showlegend: false,
         });
@@ -362,9 +368,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           y: [remainder],
           type: "bar",
           name: "Remainder",
-          marker: { color: "lightgray", opacity: 0.3 },
+          marker: { color: "lightgray", opacity: 0.8 },
           offsetgroup: "stock",
-          width: 0.35,
+          width: 0.5,
           base: [sectorWeight],
           hovertemplate: `Remainder: ${remainder.toFixed(1)}%<extra></extra>`,
           showlegend: false,
@@ -397,9 +403,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
             y: [-rescaledHeight],  // Negative to go below x-axis
             type: "bar",
             name: item.ig,
-            marker: { color: igColor, line: { color: "white", width: 1.5 } },
+            marker: { color: igColor, line: { color: "white", width: 1.5 }, opacity: 0.5 },
             offsetgroup: "stock",
-            width: 0.35,
+            width: 0.55,
             base: [-cumulative],  // Negative base to stack downward
             hovertemplate: `${item.ig}: ${item.weight.toFixed(1)}% of portfolio<br>(${rescaledHeight.toFixed(1)}% of ${sector})<extra></extra>`,
             showlegend: false,
@@ -411,7 +417,8 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
         // Add distribution curve for sector
         const samples = distSamplesBenchBySector[sector] ?? [];
         if (samples.length > 0) {
-          const curveWidth = 0.35;
+          const barWidth = 0.5;
+          const halfBarWidth = barWidth / 2;
           const steps = 80;
           const bandwidth = 8;
           const densities: number[] = [];
@@ -432,8 +439,8 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           const curveX: number[] = [];
           const curveY: number[] = [];
           densities.forEach((d, i) => {
-            const bow = (d / maxD) * curveWidth;
-            curveX.push(xPos - 0.175 + bow);
+            const bow = (d / maxD) * halfBarWidth;
+            curveX.push(xPos - halfBarWidth + bow + halfBarWidth);
             curveY.push(ys[i]);
           });
           
@@ -455,12 +462,13 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           
           // Add median line
           const med = median(samples);
+          const medianHalfBarWidth = 0.5 / 2;
           medianShapes.push({
             type: "line",
             xref: "x",
             yref: "y",
-            x0: xPos - 0.175,
-            x1: xPos + 0.175,
+            x0: xPos - medianHalfBarWidth,
+            x1: xPos + medianHalfBarWidth,
             y0: med,
             y1: med,
             line: {
@@ -478,13 +486,13 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               {
                 barmode: "stack",
                 height: 380,
-                margin: { l: 60, r: 20, t: 45, b: 100 },
+                margin: { l: 80, r: 80, t: 60, b: 80 },
               yaxis: {
                 title: { text: "" },
                 range: [-100, 100],  // Extended range to show bars below axis
                 tickmode: "array",
-                tickvals: [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100],
-                ticktext: ["100", "80", "60", "40", "20", "0", "20", "40", "60", "80", "100"],
+                tickvals: [-100, -75, -50, -25, 0, 25, 50, 75, 100],
+                ticktext: ["100%", "75%", "50%", "25%", "0%", "25%", "50%", "75%", "100%"],
                 zeroline: true,
                 zerolinewidth: 2,
                 zerolinecolor: "black",
@@ -504,11 +512,10 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               },
               shapes: [
                 ...medianShapes,
-                // Grid lines for positive y-values only
-                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 20, y1: 20, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 40, y1: 40, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 60, y1: 60, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 80, y1: 80, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                // Grid lines for positive y-values only (25% steps)
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 25, y1: 25, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 50, y1: 50, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 75, y1: 75, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
                 { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
                 {
                   type: "line",
@@ -527,11 +534,11 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               ],
               annotations: [
                 {
-                  x: -0.07,
-                  y: 50,
+                  x: -0.12,
+                  y: 60,
                   xref: "paper",
                   yref: "y",
-                  text: "Sector Weight in %",
+                  text: "Sector Weight",
                   textangle: -90,
                   showarrow: false,
                   font: { size: 12 },
@@ -539,11 +546,11 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
                   yanchor: "middle",
                 },
                 {
-                  x: -0.07,
-                  y: -50,
+                  x: -0.12,
+                  y: -60,
                   xref: "paper",
                   yref: "y",
-                  text: "Rescaled Industry Weights in %",
+                  text: "Rescaled Ind. Weight",
                   textangle: -90,
                   showarrow: false,
                   font: { size: 12 },
@@ -574,7 +581,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               name: selectedStock?.name ?? emptyStockName,
               marker: { color: STOCK_COLOR },
               offsetgroup: "stock",
-              width: 0.35,
+              width: 0.65,
             });
 
             const remainderWeights = filteredSectorData.stockWeights.map(
@@ -585,9 +592,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               y: remainderWeights,
               type: "bar",
               name: "Remainder",
-              marker: { color: REMAINDER_COLOR, opacity: 0.3 },
+              marker: { color: REMAINDER_COLOR, opacity: 0.8 },
               offsetgroup: "stock",
-              width: 0.35,
+              width: 0.65,
               showlegend: false,
               hovertemplate: "Remainder: %{y:.1f}%<extra></extra>",
             });
@@ -595,7 +602,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
             filteredSectorData.sectors.forEach((sector, idx) => {
               const samples = distSamplesBenchBySector[sector] ?? [];
               const xCenter = filteredSectorData.positions[idx];
-              const curve = createDistributionCurve(xCenter, samples, sector, currentBenchmarkLabel);
+              const curve = createDistributionCurve(xCenter, samples, sector, currentBenchmarkLabel, 0.65);
               if (curve) {
                 traces.push(curve);
               }
@@ -607,14 +614,14 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
         layout={
           {
             barmode: "stack",
-            height: 300,
-            margin: { l: 60, r: 20, t: 45, b: 60 },
+            height: 380,
+            margin: { l: 80, r: 80, t: 80, b: 80 },
             yaxis: {
-              title: { text: "Weight (%)" },
+              title: { text: "Sector Weight" },
               range: [0, 100],
-              tickmode: "linear",
-              tick0: 0,
-              dtick: 20,
+              tickmode: "array",
+              tickvals: [0, 25, 50, 75, 100],
+              ticktext: ["0%", "25%", "50%", "75%", "100%"],
               zeroline: true,
               zerolinewidth: 2,
               zerolinecolor: "black",
@@ -638,12 +645,13 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               const samples = distSamplesBenchBySector[sector] ?? [];
               const med = median(samples);
               const xCenter = filteredSectorData.positions[idx];
+              const halfBarWidth = 0.65 / 2;
               return {
                 type: "line",
                 xref: "x",
                 yref: "y",
-                x0: xCenter - 0.175,
-                x1: xCenter + 0.175,
+                x0: xCenter - halfBarWidth,
+                x1: xCenter + halfBarWidth,
                 y0: med,
                 y1: med,
                 line: {
@@ -717,9 +725,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
         y: [stockSectorWeight],
         type: "bar",
         name: sector,
-        marker: { color: STOCK_COLOR },
+        marker: { color: STOCK_COLOR , opacity: 0.8},
         offsetgroup: "stock",
-        width: 0.35,
+        width: 0.38,
         hovertemplate: `${sector}: ${stockSectorWeight.toFixed(1)}%<extra></extra>`,
         showlegend: false,
       });
@@ -729,9 +737,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
         x: [xPos],
         y: [100 - stockSectorWeight],
         type: "bar",
-        marker: { color: REMAINDER_COLOR, opacity: 0.3 },
+        marker: { color: REMAINDER_COLOR, opacity: 0.8   },
         offsetgroup: "stock",
-        width: 0.35,
+        width: 0.38,
         base: [stockSectorWeight],
         hovertemplate: `Remainder: ${(100 - stockSectorWeight).toFixed(1)}%<extra></extra>`,
         showlegend: false,
@@ -744,7 +752,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
         type: "bar",
         marker: { color: COMP_COLOR },
         offsetgroup: "comp",
-        width: 0.35,
+        width: 0.38,
         hovertemplate: `${sector}: ${compSectorWeight.toFixed(1)}%<extra></extra>`,
         showlegend: false,
       });
@@ -754,9 +762,9 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
         x: [xPos],
         y: [100 - compSectorWeight],
         type: "bar",
-        marker: { color: REMAINDER_COLOR, opacity: 0.3 },
+        marker: { color: REMAINDER_COLOR, opacity: 0.8 },
         offsetgroup: "comp",
-        width: 0.35,
+        width: 0.38,
         base: [compSectorWeight],
         hovertemplate: `Remainder: ${(100 - compSectorWeight).toFixed(1)}%<extra></extra>`,
         showlegend: false,
@@ -775,11 +783,10 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
 
     // Add separator line if there are comparison-only sectors
     const shapes: any[] = [
-      // Grid lines for positive y-values only
-      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 20, y1: 20, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 40, y1: 40, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 60, y1: 60, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 80, y1: 80, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+      // Grid lines for positive y-values only (25% steps)
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 25, y1: 25, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 50, y1: 50, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 75, y1: 75, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
       { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
       {
         type: "line",
@@ -820,13 +827,13 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           layout={{
             barmode: "group",
             height: 380,
-            margin: { l: 60, r: 20, t: 45, b: 100 },
+            margin: { l: 100, r: 80, t: 70, b: 70 },
           yaxis: {
             title: { text: "" },
             range: [-100, 100],
             tickmode: "array",
-            tickvals: [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100],
-            ticktext: ["100", "80", "60", "40", "20", "0", "20", "40", "60", "80", "100"],
+            tickvals: [-100, -75, -50, -25, 0, 25, 50, 75, 100],
+            ticktext: ["100%", "75%", "50%", "25%", "0%", "25%", "50%", "75%", "100%"],
             zeroline: true,
             zerolinewidth: 2,
             zerolinecolor: "black",
@@ -847,11 +854,11 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           shapes,
           annotations: [
             {
-              x: -0.07,
-              y: 50,
+              x: -0.12,
+              y: 60,
               xref: "paper",
               yref: "y",
-              text: "Sector Weight in %",
+              text: "Sector Weight",
               textangle: -90,
               showarrow: false,
               font: { size: 12 },
@@ -859,11 +866,11 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               yanchor: "middle",
             },
             {
-              x: -0.07,
+              x: -0.12,
               y: -50,
               xref: "paper",
               yref: "y",
-              text: "Rescaled Industry Weights in %",
+              text: "Rescaled Ind. Weight",
               textangle: -90,
               showarrow: false,
               font: { size: 12 },
@@ -928,7 +935,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
       type: "bar",
       name: selectedStock?.name ?? emptyStockName,
       marker: { color: STOCK_COLOR },
-      width: 0.35,
+      width: 0.38,
       offsetgroup: "stock",
       hovertemplate: `${item.sector}: ${item.stockWeight.toFixed(1)}%<extra></extra>`,
       showlegend: false,
@@ -939,8 +946,8 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
       x: [xPos],
       y: [100 - item.stockWeight],
       type: "bar",
-      marker: { color: REMAINDER_COLOR, opacity: 0.3 },
-      width: 0.35,
+      marker: { color: REMAINDER_COLOR, opacity: 0.8 },
+      width: 0.38,
       offsetgroup: "stock",
       base: [item.stockWeight],
       hovertemplate: `Remainder: ${(100 - item.stockWeight).toFixed(1)}%<extra></extra>`,
@@ -954,7 +961,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
       type: "bar",
       name: comparisonStock?.name ?? emptyCompName,
       marker: { color: COMP_COLOR },
-      width: 0.35,
+      width: 0.38,
       offsetgroup: "comp",
       hovertemplate: `${item.sector}: ${item.compWeight.toFixed(1)}%<extra></extra>`,
       showlegend: false,
@@ -965,8 +972,8 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
       x: [xPos],
       y: [100 - item.compWeight],
       type: "bar",
-      marker: { color: REMAINDER_COLOR, opacity: 0.3 },
-      width: 0.35,
+      marker: { color: REMAINDER_COLOR, opacity: 0.8 },
+      width: 0.38,
       offsetgroup: "comp",
       base: [item.compWeight],
       hovertemplate: `Remainder: ${(100 - item.compWeight).toFixed(1)}%<extra></extra>`,
@@ -998,14 +1005,14 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
         data={traces}
         layout={{
           barmode: "group",
-          height: 300,
-          margin: { l: 60, r: 20, t: 45, b: 100 },
+          height: 380,
+          margin: { l: 80, r: 80, t: 70, b: 100 },
         yaxis: {
-          title: { text: "Weight (%)" },
+          title: { text: "Sector Weight" },
           range: [0, 100],
-          tickmode: "linear",
-          tick0: 0,
-          dtick: 20,
+          tickmode: "array",
+          tickvals: [0, 25, 50, 75, 100],
+          ticktext: ["0%", "25%", "50%", "75%", "100%"],
           zeroline: true,
           zerolinewidth: 2,
           zerolinecolor: "black",
@@ -1013,7 +1020,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           linewidth: 2,
           linecolor: "black",
           showgrid: true,
-          gridwidth: 1.5,
+          gridwidth: 1.2,
           gridcolor: "rgba(128, 128, 128, 0.3)",
         },
         xaxis: {
@@ -1033,6 +1040,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
       />
   );
       })()}
+      </Box>
       </Paper>
     </Box>
   );

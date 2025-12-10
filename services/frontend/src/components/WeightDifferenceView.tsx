@@ -638,6 +638,9 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
   return (
     <Box>
       <Paper variant="outlined" sx={{ p: 1 }}>
+        <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#333", mb: 1 }}>
+          Percentage Points between Baseline and Asset
+        </Typography>
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1, alignItems: "center" }}>
           <Typography variant="caption" sx={{ fontSize: "0.75rem", mr: 0.5 }}>
             Display Industry Groups:

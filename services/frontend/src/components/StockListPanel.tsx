@@ -874,22 +874,32 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
               gridTemplateColumns: { xs: "1fr", md: "260px minmax(0, 1fr)" },
               gap: 2,
               alignItems: "stretch",
-              minHeight: 380,
+              minHeight: 380, 
             }}
           >
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ mb: 1, fontWeight: 600, textAlign: "center" }}
+              <Box
+                sx={{
+                  bgcolor: "#f5f5f5",
+                  p: 1,
+                  mb: 1,
+                  borderRadius: 1,
+                  border: "1px solid #e0e0e0",
+                }}
               >
-                Sector and Industry Group Hierarchy
-              </Typography>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ mb: 0, fontWeight: 600, textAlign: "center" }}
+                >
+                  Classification Hierarchy
+                </Typography>
+              </Box>
 
               <List
                 dense
                 disablePadding
                 sx={{
-                  height: 420,
+                  height: 411,
                   overflow: "auto",
                   border: "1px solid #e0e0e0",
                   borderRadius: 1,
@@ -961,30 +971,41 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                 display: "flex",
                 flexDirection: "column",
                 gap: 0.5,
-                height: "100%",
+                height: 480,
                 pt: 0,
               }}
             >
-              <Box sx={{ flex: "1 0 auto", minHeight: 0, mt: 0 }}>
+              <Box sx={{ flex: "0 0 auto", minHeight: 0, mt: 0 }}>
                 <Box
                   sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                    gap: 2,
-                    alignItems: "flex-start",
+                    bgcolor: "#f5f5f5",
+                    p: 1,
+                    mb: 1,
+                    borderRadius: 1,
+                    border: "1px solid #e0e0e0",
+                    width: "97.2%",
                   }}
                 >
-                <Box>
                   <Typography
                     variant="subtitle2"
                     sx={{
-                      mb: 1,
+                      mb: 0,
                       fontWeight: 600,
                       textAlign: "center",
                     }}
                   >
-                    Sector or Industry Group Weights
+                    Stock Level Category Weights
                   </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", md: "1.1fr 1.2fr" },
+                    gap: 2.5,
+                    alignItems: "flex-start",
+                  }}
+                >
+                <Box>
                   <Box
                     sx={{
                       display: "grid",
@@ -992,6 +1013,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                       gap: 1.5,
                       mb: 1,
                       alignItems: "center",
+                      width: "100%",
                     }}
                   >
                     <Box sx={{ position: "relative" }}>
@@ -1151,7 +1173,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                       onChange={(_, val) => val && setSortOrder(val)}
                       sx={{
                         width: 72,
-                        justifySelf: "start",
+                        justifySelf: "end",
                         '& .MuiToggleButton-root': {
                           py: 0.4,
                           px: 1,
@@ -1170,7 +1192,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                     sx={{
                       maxHeight: 310,
                       overflowY: "auto",
-                      width: { xs: "100%", md: "90%" },
+                      width: "100%",
                     }}
                   >
                     <List dense disablePadding>
@@ -1240,7 +1262,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
 
                 <Box>
                   {/* Custom Legend */}
-                  <Box sx={{ mb: 1 }}>
+                  <Box sx={{ mb: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <Typography
                       variant="caption"
                       sx={{
@@ -1258,6 +1280,7 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                         display: "flex",
                         flexDirection: "column",
                         gap: 0.5,
+                        alignItems: "flex-start",
                       }}
                     >
                       {Object.keys(scatterData).map((ig, idx) => {
@@ -1295,6 +1318,21 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                         const highlightStockActive = Boolean(highlightedStockIsin);
                         const highlightIGActive = Boolean(highlightedIG);
                         const traces: any[] = [];
+
+                        // Add the diagonal reference line as the first trace (so data points appear on top)
+                        traces.push({
+                          x: [0, 100],
+                          y: [0, 100],
+                          mode: "lines",
+                          type: "scatter",
+                          line: {
+                            color: "gray",
+                            width: 2,
+                            dash: "dot",
+                          },
+                          hoverinfo: "skip",
+                          showlegend: false,
+                        });
 
                         Object.entries(scatterData).forEach(([ig, points], idx) => {
                           // Use scatter plot palette for different industry groups
@@ -1349,33 +1387,33 @@ const StockListPanel = forwardRef<StockListPanelHandle, StockListPanelProps>(
                     }
                     layout={
                       {
-                        height: 380,
-                        margin: { l: 15, r: 20, t: 0, b: 40 },
+                        height: 330,
+                        margin: { l: 45, r: 30, t: 10, b: 35 },
                         xaxis: {
                           title: {
-                            text: scatterSector || "Sector weight (%)",
+                            text: `${scatterSector} weight` || "Sector weight",
+                            font: { size: 12 },
                           },
                           range: [0, 100],
+                          tickmode: "array",
+                          tickvals: [0, 25, 50, 75, 100],
+                          ticktext: ["0%", "25%", "50%", "75%", "100%"],
+                          gridcolor: "#e0e0e0",
+                          showgrid: true,
                         },
                         yaxis: {
                           title: {
-                            text: "Industry Group weight (%)",
+                            text: "Industry Group weight",
+                            font: { size: 12 },
                           },
                           range: [0, 100],
+                          tickmode: "array",
+                          tickvals: [0, 25, 50, 75, 100],
+                          ticktext: ["", "25%", "50%", "75%", "100%"],
+                          gridcolor: "#e0e0e0",
+                          showgrid: true,
                         },
                         shapes: [
-                          {
-                            type: "line",
-                            x0: 0,
-                            y0: 0,
-                            x1: 100,
-                            y1: 100,
-                            line: {
-                              color: "gray",
-                              width: 1,
-                              dash: "dot",
-                            },
-                          },
                         ],
                         showlegend: false,
                       } as any

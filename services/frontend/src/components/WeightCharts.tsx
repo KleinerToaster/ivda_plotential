@@ -117,8 +117,8 @@ const createDistributionCurve = (
   const curveX: number[] = [];
   const curveY: number[] = [];
   densities.forEach((d, i) => {
-    const bow = (d / maxD) * halfBarWidth;
-    curveX.push(xCenter - halfBarWidth + bow + halfBarWidth);
+    const bow = (d / maxD) * barWidth;
+    curveX.push(xCenter - halfBarWidth + bow);
     curveY.push(ys[i]);
   });
   
@@ -439,8 +439,8 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           const curveX: number[] = [];
           const curveY: number[] = [];
           densities.forEach((d, i) => {
-            const bow = (d / maxD) * halfBarWidth;
-            curveX.push(xPos - halfBarWidth + bow + halfBarWidth);
+            const bow = (d / maxD) * barWidth;
+            curveX.push(xPos - halfBarWidth + bow);
             curveY.push(ys[i]);
           });
           
@@ -513,10 +513,10 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               shapes: [
                 ...medianShapes,
                 // Grid lines for positive y-values only (25% steps)
-                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 25, y1: 25, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 50, y1: 50, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 75, y1: 75, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 25, y1: 25, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 50, y1: 50, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 75, y1: 75, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+                { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
                 {
                   type: "line",
                   xref: "x",
@@ -628,9 +628,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               showline: true,
               linewidth: 2,
               linecolor: "black",
-              showgrid: true,
-              gridwidth: 1.5,
-              gridcolor: "rgba(128, 128, 128, 0.3)",
+              showgrid: false,
             },
             xaxis: {
               title: { text: "" },
@@ -641,25 +639,33 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
               side: "top",
               tickangle: -25,
             },
-            shapes: filteredSectorData.sectors.map((sector, idx) => {
-              const samples = distSamplesBenchBySector[sector] ?? [];
-              const med = median(samples);
-              const xCenter = filteredSectorData.positions[idx];
-              const halfBarWidth = 0.65 / 2;
-              return {
-                type: "line",
-                xref: "x",
-                yref: "y",
-                x0: xCenter - halfBarWidth,
-                x1: xCenter + halfBarWidth,
-                y0: med,
-                y1: med,
-                line: {
-                  width: 4,
-                  color: DISTRIBUTION_CURVE_COLOR,
-                },
-              };
-            }),
+            shapes: [
+              // Grid lines at 25% steps
+              { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 25, y1: 25, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+              { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 50, y1: 50, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+              { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 75, y1: 75, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+              { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+              // Median lines
+              ...filteredSectorData.sectors.map((sector, idx) => {
+                const samples = distSamplesBenchBySector[sector] ?? [];
+                const med = median(samples);
+                const xCenter = filteredSectorData.positions[idx];
+                const halfBarWidth = 0.65 / 2;
+                return {
+                  type: "line",
+                  xref: "x",
+                  yref: "y",
+                  x0: xCenter - halfBarWidth,
+                  x1: xCenter + halfBarWidth,
+                  y0: med,
+                  y1: med,
+                  line: {
+                    width: 4,
+                    color: DISTRIBUTION_CURVE_COLOR,
+                  },
+                };
+              }),
+            ],
             showlegend: false,
           } as any
         }
@@ -784,10 +790,10 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
     // Add separator line if there are comparison-only sectors
     const shapes: any[] = [
       // Grid lines for positive y-values only (25% steps)
-      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 25, y1: 25, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 50, y1: 50, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 75, y1: 75, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
-      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 25, y1: 25, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 50, y1: 50, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 75, y1: 75, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+      { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
       {
         type: "line",
         xref: "x",
@@ -1019,9 +1025,7 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           showline: true,
           linewidth: 2,
           linecolor: "black",
-          showgrid: true,
-          gridwidth: 1.2,
-          gridcolor: "rgba(128, 128, 128, 0.3)",
+          showgrid: false,
         },
         xaxis: {
           title: { text: "" },
@@ -1032,7 +1036,15 @@ const WeightCharts: React.FC<WeightChartsProps> = ({
           side: "top",
           tickangle: -25,
         },
-        shapes,
+        shapes: [
+          // Grid lines at 25% steps
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 25, y1: 25, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 50, y1: 50, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 75, y1: 75, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100, line: { width: 1.5, color: "rgba(128, 128, 128, 0.3)", dash: "dot" }, layer: "below" },
+          // Separator line (if needed)
+          ...shapes,
+        ],
         showlegend: false,
       } as any}
         config={{ displayModeBar: false, responsive: true } as any}

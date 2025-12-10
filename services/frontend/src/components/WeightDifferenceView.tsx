@@ -617,6 +617,7 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
           line: {
             color: "rgba(128, 128, 128, 0.3)",
             width: 1,
+            dash: "dot",
           },
         },
         {
@@ -628,6 +629,7 @@ const WeightDifferenceView: React.FC<WeightDifferenceViewProps> = ({
           line: {
             color: "rgba(128, 128, 128, 0.3)",
             width: 1,
+            dash: "dot",
           },
         },
       ]),
